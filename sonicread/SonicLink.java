@@ -56,17 +56,11 @@ class SonicLink {
     int i,j,k;
     //System.out.format(".");
     t++;
-    //System.out.format("decode input: %e\n", x);
     x = filter(x);
-    //System.out.format("filter() out: %e\n", x);
     x = dilate(x);
-    //System.out.format("dilate() out: %e\n", x);
     x = median(x);
-    //System.out.format("median() out: %e\n", x);
     make_decision(x);
-    //System.out.format("make_decision() out: %d %d %d %d\n", decisions[0], decisions[1], decisions[2], decisions[3]);
     b_median();
-    //System.out.format("b_median() out: %d %d %d %d\n", decisions[0], decisions[1], decisions[2], decisions[3]);
     update_level(x);
 
     /* activation test */
