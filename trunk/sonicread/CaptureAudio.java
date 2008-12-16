@@ -62,8 +62,6 @@ public class CaptureAudio {
 
   public boolean ReadSample() {
     int tmp;
-    if((bufwix % 2) == 1)
-      System.out.format("oneven\n");
     if(bufwix > 0 && (bufrix < bufwix))
       return true;
     bufwix = targetDataLine.read(buf, 0, buf.length);
