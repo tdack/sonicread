@@ -12,6 +12,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
+ * This code is based on the work of Tomás Oliveira e Silva
+ * http://www.ieeta.pt/~tos/software/polar_s410.html
+ * 
  * Remco den Breeje, <stacium@gmail.com>
  */
 
@@ -42,13 +45,29 @@ public class CreateHsr {
     section_number = 1;
     total_byte_cnt = 0;
   }
-
+  
   public boolean IsDone()
   {
     return(total_byte_cnt > 0 && (ix == total_byte_cnt));
   }
+  
+  public boolean IsStarted()
+  {
+    return(total_byte_cnt > 0);
+  }
+  
+  public int GetProgress()
+  {
+      int rval = 0;
+      if(total_byte_cnt > 0)
+      {
+          rval = 100 * ix / total_byte_cnt;
+      }
+      return rval;
+  }
 
-  public boolean AddData(int b)
+
+  public boolean AddData(int b) throws Exception
   {
     if(b >= 0)
     {
@@ -56,23 +75,20 @@ public class CreateHsr {
       crc16(data[ix - 1]);
       if(ix == 1 && data[0] != 85)
       {
-        System.out.println("Bad first section header (byte 1)");
-        return false;
+        throw new Exception("Bad first section header (byte 1)");
       }
       if(ix == 2 && data[1] == 81)
         System.out.println("Found S510");
       if(ix == 3 && data[2] != 1)
       {
-        System.out.println("Bad first section header (byte 3)");
-        return false;
+        throw new Exception("Bad first section header (byte 3)");
       }
       /* looking for end of section header */
       if(ix == 8)
       {
         if(crc > 0)
         {
-          System.out.println("First section CRC error");
-          return false;
+          throw new Exception("First section CRC error");
         }
 
         /* calculate total number of bytes to be received (8=section header) */
@@ -87,7 +103,7 @@ public class CreateHsr {
             data[section_start + 2 ] < 1 ||
             data[section_start + 2 ] > 60)
         {
-          System.out.format("Bad section header, section_number: %d\n", section_number);
+          throw new Exception(String.format("Bad section header, section_number: %d\n", section_number));
         }
         if(section_number == 1) { /* tell user, we started listening */
           System.out.format("Section %d started at %d\n", section_number, ix);
@@ -97,10 +113,9 @@ public class CreateHsr {
       if(ix >= section_start + 3 && ix == section_start + data[section_start + 2] + 3 + 2)
       {
         System.out.format("Section %d ended at %d\n", section_number, ix);
-        if(crc > 0)
+        if(crc > 0) 
         {
-          System.out.println("Section CRC error");
-          return false;
+          throw new Exception("Section CRC error");
         }
         /* update section start with new index */
         section_start = ix;
@@ -111,22 +126,17 @@ public class CreateHsr {
       {
         if(data[ix - 1] != 7)
         {
-          System.out.println("Bad trailer byte");
-          return false;
+          throw new Exception("Bad trailer byte");
         }
         if(section_start != ix - 1 || section_number != data[3] + 1)
         {
-          System.out.println("Bad section structure");
-          return false;
+          throw new Exception("Bad section structure");
         }
       }
-
-      // progress
-      // System.out.format("%d of %d\n", ix, total_byte_cnt);
     }
     return true;
   }
-
+  
   public void WriteHsr() throws Exception
   {
     int i;

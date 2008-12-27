@@ -21,6 +21,8 @@ import javax.swing.JFrame;
  * The application's main frame.
  */
 public class SonicReadView extends FrameView {
+    
+    private Task listenTask = null;
 
     public SonicReadView(SingleFrameApplication app) {
         super(app);
@@ -73,8 +75,10 @@ public class SonicReadView extends FrameView {
                 } else if ("message".equals(propertyName)) {
                     String text = (String)(evt.getNewValue());
                     statusMessageLabel.setText((text == null) ? "" : text);
+                    statusMessageLabel.setIcon(null);
                     messageTimer.restart();
                 } else if ("progress".equals(propertyName)) {
+                    //evt.getNewValue()
                     int value = (Integer)(evt.getNewValue());
                     progressBar.setVisible(true);
                     progressBar.setIndeterminate(false);
@@ -95,12 +99,20 @@ public class SonicReadView extends FrameView {
     }
     
     @Action
-    public Task listen() {
-        Task task = null;
-        listenButton.setEnabled(false);
-        task = new ListenTask();
-        return task;
+    public Task startListen() {
+        startListenButton.setEnabled(false);
+        stopListenButton.setEnabled(true);
+        listenTask = new ListenTask();
+        return listenTask;
     }
+    
+    @Action
+    public void stopListen() {
+        startListenButton.setEnabled(true);
+        stopListenButton.setEnabled(false);
+        listenTask.cancel(true);
+    }
+    
     
     private class ListenTask extends SonicReadApp.SonicListenTask {
         ListenTask() {
@@ -111,8 +123,10 @@ public class SonicReadView extends FrameView {
             //setFile(getFile());
             //textArea.setText(fileContents);
             //setModified(false);
+            statusMessageLabel.setText("Done");
             NumberTextField.setText(rval);
-            listenButton.setEnabled(true);
+            startListenButton.setEnabled(true);
+            stopListenButton.setEnabled(false);
         }
 
         @Override protected void failed(Throwable e) {
@@ -121,15 +135,24 @@ public class SonicReadView extends FrameView {
             //String title = getResourceMap().getString("loadFailedTitle");
             //int type = JOptionPane.ERROR_MESSAGE;
             //JOptionPane.showMessageDialog(getFrame(), msg, title, type);
-            listenButton.setEnabled(true);
+            startListenButton.setEnabled(true);
+            stopListenButton.setEnabled(false);
             //String title = "Error!";
             statusMessageLabel.setIcon(stopIcon);
             statusMessageLabel.setText(e.getMessage());
+            //statusMessageLabel.setText("Task failed");
             //int type = JOptionPane.ERROR_MESSAGE;
             //JOptionPane.showMessageDialog(getFrame(), msg, title, type);
             //statusMessageLabel.setText(arg0);
         }
         
+    }
+    
+    public void setDbLevel(int val)
+    {
+        jDbLevel.setValue(val);
+        //jDbLevel.setForeground(new Color(0,0,255));
+        //jDbLevel.setBackground(new Color(255,0,0));
     }
 
 
@@ -150,7 +173,8 @@ public class SonicReadView extends FrameView {
         jButton3 = new javax.swing.JButton();
         jDbLevel = new javax.swing.JProgressBar();
         jToolBar1 = new javax.swing.JToolBar();
-        listenButton = new javax.swing.JButton();
+        startListenButton = new javax.swing.JButton();
+        stopListenButton = new javax.swing.JButton();
         menuBar = new javax.swing.JMenuBar();
         javax.swing.JMenu fileMenu = new javax.swing.JMenu();
         javax.swing.JMenuItem exitMenuItem = new javax.swing.JMenuItem();
@@ -208,17 +232,25 @@ public class SonicReadView extends FrameView {
         jToolBar1.setName("jToolBar1"); // NOI18N
 
         javax.swing.ActionMap actionMap = org.jdesktop.application.Application.getInstance(sonicread.SonicReadApp.class).getContext().getActionMap(SonicReadView.class, this);
-        listenButton.setAction(actionMap.get("listen")); // NOI18N
-        listenButton.setFocusable(false);
-        listenButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        listenButton.setName("listenButton"); // NOI18N
-        listenButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        listenButton.addActionListener(new java.awt.event.ActionListener() {
+        startListenButton.setAction(actionMap.get("startListen")); // NOI18N
+        startListenButton.setFocusable(false);
+        startListenButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        startListenButton.setName("startListenButton"); // NOI18N
+        startListenButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        startListenButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                listenButtonActionPerformed(evt);
+                startListenButtonActionPerformed(evt);
             }
         });
-        jToolBar1.add(listenButton);
+        jToolBar1.add(startListenButton);
+
+        stopListenButton.setAction(actionMap.get("stopListen")); // NOI18N
+        stopListenButton.setEnabled(false);
+        stopListenButton.setFocusable(false);
+        stopListenButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        stopListenButton.setName("stopListenButton"); // NOI18N
+        stopListenButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        jToolBar1.add(stopListenButton);
 
         javax.swing.GroupLayout mainPanelLayout = new javax.swing.GroupLayout(mainPanel);
         mainPanel.setLayout(mainPanelLayout);
@@ -359,9 +391,9 @@ private void mainPanelKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event
   }
 }//GEN-LAST:event_mainPanelKeyPressed
 
-private void listenButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_listenButtonActionPerformed
+private void startListenButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startListenButtonActionPerformed
       //CaptureAudio audio = new CaptureAudio();
-}//GEN-LAST:event_listenButtonActionPerformed
+}//GEN-LAST:event_startListenButtonActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton DecreaseButton;
@@ -371,13 +403,14 @@ private void listenButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     private javax.swing.JProgressBar jDbLevel;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JToolBar jToolBar1;
-    private javax.swing.JButton listenButton;
     private javax.swing.JPanel mainPanel;
     private javax.swing.JMenuBar menuBar;
     private javax.swing.JProgressBar progressBar;
+    private javax.swing.JButton startListenButton;
     private javax.swing.JLabel statusAnimationLabel;
     private javax.swing.JLabel statusMessageLabel;
     private javax.swing.JPanel statusPanel;
+    private javax.swing.JButton stopListenButton;
     // End of variables declaration//GEN-END:variables
 
     private final Timer messageTimer;

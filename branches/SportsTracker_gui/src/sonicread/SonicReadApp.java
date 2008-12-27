@@ -15,13 +15,16 @@ import org.jdesktop.application.Task;
  */
 public class SonicReadApp extends SingleFrameApplication {
     
+    static private SonicReadView srv;    
 
     /**
      * At startup create and show the main frame of the application.
      */
     @Override protected void startup() {
+        srv = new SonicReadView(this);
+        show(srv);
         
-        show(new SonicReadView(this));
+        //show(new SonicReadView(this));
     }
 
     /**
@@ -52,6 +55,7 @@ public class SonicReadApp extends SingleFrameApplication {
    /**
      * A Task that loads the contents of a file into a String.
      */
+    //static class SonicListenTask extends Task<String, Void> {
     static class SonicListenTask extends Task<String, Void> {
 
         //private final File file;
@@ -86,68 +90,73 @@ public class SonicReadApp extends SingleFrameApplication {
          */
         @Override
         protected String doInBackground() throws Exception {
-            int val;
+            int val = -1;
+            short tmp;
             CreateHsr hsr = new CreateHsr();
             SonicLink sonic = new SonicLink();
             CaptureAudio audio = new CaptureAudio();
+            
+            //setMessage("Trying to capture audio data");
             audio.Start();
             
+            setMessage("Waiting for start byte");
             while(audio.ReadSample())
             {
-                if((val = sonic.decode(audio.GetSample())) == -2)
-                {
-                    System.out.format("decode error\n");
-                    throw new IOException("decode error");
-                    //return null;
+                tmp = audio.GetSample();
+                srv.setDbLevel(60 + (int)(20*Math.log10( Math.max(1, Math.abs((double)tmp)) / (double)32767) + 0.5));
+                
+                try {
+                    val = sonic.decode(tmp);
+                }
+                catch (Exception e) {
+                    sonic.restart();
+                    setMessage(e.getMessage());
                 }
                 
                 /* Got byte? */
                 if(val >= 0)
                 {
-                    if(!hsr.AddData(val))
-                    {
-                        System.out.format("HALTED - Error while checking data\n");
-                        break;
+                    try {
+                        hsr.AddData(val);
                     }
+                    catch (Exception e) {
+                        audio.Stop();
+                        audio.Close();
+                        throw new Exception(String.format("Error while checking data: %s", e.getMessage()));
+                    }
+                }
+                
+                if(hsr.IsStarted())
+                {
+                    setMessage("Processing data");
+                    setProgress(hsr.GetProgress());
                 }
 
                 if(hsr.IsDone())
                 {
                       System.out.format("\nDone.\n");
-                      //hsr.WriteSrd();
-                      //System.out.format("Written data to exercise.srd\n");
-                      hsr.WriteHsr();
-                      System.out.format("Written data to exercise.hsr\n");
+                      //hsr.WriteHsr();
+                      //System.out.format("Written data to exercise.hsr\n");
                       break;
+                }
+                
+                if(isCancelled())
+                {
+                    break;
                 }
             }
 
+            // if we get here, we're done
+            srv.setDbLevel(0);
+            audio.Stop();
+            audio.Close();
             
-            //setProgress(Math.min(offset, fileLength), 0, fileLength);
-            //setProgress(100, 0, 50);
-            /*
-            int fileLength = (int) file.length();
-            int nChars = -1;
-            // progress updates after every blockSize chars read
-            int blockSize = Math.max(1024, fileLength / 100);
-            int p = blockSize;
-            char[] buffer = new char[32];
-            StringBuilder contents = new StringBuilder();
-            BufferedReader rdr = new BufferedReader(new FileReader(file));
-            while (!isCancelled() && (nChars = rdr.read(buffer)) != -1) {
-                contents.append(buffer, 0, nChars);
-                if (contents.length() > p) {
-                    p += blockSize;
-                    setProgress(contents.length(), 0, fileLength);
-                }
-            }
-             */
-            
-            System.out.format("boe\n");
             if (!isCancelled()) {
-                return "boe";
+                return "string";
             } else {
-                return null;
+                return "ok";
+                //return null;
+                //throw new Exception("Cancelled");
             }
         }
     }

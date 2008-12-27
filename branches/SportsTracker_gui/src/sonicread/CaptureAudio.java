@@ -60,6 +60,14 @@ public class CaptureAudio {
   public void Start() {
     targetDataLine.start();
   }
+  
+  public void Stop() {
+    targetDataLine.stop();
+  }
+  
+  public void Close() {
+    targetDataLine.close();
+  }
 
   public boolean ReadSample() {
     int tmp;

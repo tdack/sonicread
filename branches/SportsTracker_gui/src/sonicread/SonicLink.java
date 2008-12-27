@@ -11,6 +11,9 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ *  This code is based on the work of Tomás Oliveira e Silva
+  * http://www.ieeta.pt/~tos/software/polar_s410.html
  *
  *  Remco den Breeje, <stacium@gmail.com>
  */
@@ -32,6 +35,7 @@ public class SonicLink {
   private int[] decisions = new int[7];
   private double level_value;
   private int level_c;
+  private int bad_bytes = 0;
 
   public SonicLink()
   {
@@ -47,7 +51,7 @@ public class SonicLink {
   }
     
   /* process next sample */
-  public int decode(double x)
+  public int decode(double x) throws Exception
   {
     int i,j,k;
     //System.out.format(".");
@@ -65,7 +69,7 @@ public class SonicLink {
       t_active = t;
       t_byte = 0;
       n_bytes = 0;
-      System.out.format("Processing signal at %d\n", t);
+      //System.out.format("Processing signal at %d\n", t);
     }
     if(t_active == 0)
           return -1;
@@ -73,8 +77,7 @@ public class SonicLink {
     if(t > t_active + 10000)
     {
       //update_status("byte start time out",1);
-      System.out.format("Byte start timed out\n");
-      return -2;
+      throw new Exception("Byte start timed out. Please restart");
     }
 
     /* new byte? */
@@ -95,13 +98,11 @@ public class SonicLink {
       { // end of the byte
 	if((n_byte & 1) == 0)
 	{ // first bit (lsb) must be a one
-	  System.out.format("bad byte start\n");
-	  return -2;
+	  throw new Exception("Bad byte start. Please restart");
 	}
 	if(n_byte >= 512)
 	{ // last bit (msb) must be a zero
-	  System.out.format("bad byte finish\n");
-	  return -2;
+	  throw new Exception("Bad byte finish. Please restart");
 	}
 	n_byte >>= 1;
 	t_byte = 0;
@@ -109,8 +110,7 @@ public class SonicLink {
 	  return n_byte;
 	if(n_byte != 0xAA)
 	{ // bad synchronization byte
-	  System.out.format("bad synchronization byte\n");
-	  return -2;
+          throw new Exception(String.format("Bad synchronization byte (%d in total). Please restart", ++bad_bytes));
 	}
 	return -1; // discard synchronization byte
       }
