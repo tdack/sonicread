@@ -4,7 +4,6 @@
 
 package sonicread;
 
-import java.io.IOException;
 import org.jdesktop.application.Application;
 import org.jdesktop.application.SingleFrameApplication;
 import org.jdesktop.application.Task;
@@ -128,8 +127,14 @@ public class SonicReadApp extends SingleFrameApplication {
                 
                 if(hsr.IsStarted())
                 {
-                    setMessage("Processing data");
-                    setProgress(hsr.GetProgress());
+                    int pg = hsr.GetProgress();
+                    if(pg < 33)
+                        setMessage("Processing data");
+                    else if(pg < 66)
+                        setMessage(String.format("Found a %s", hsr.GetMonitorType()));
+                    else
+                        setMessage(String.format("Fetching %d bytes", hsr.GetNumberOfBytes()));
+                    setProgress(pg);
                 }
 
                 if(hsr.IsDone())

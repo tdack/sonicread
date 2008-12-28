@@ -36,6 +36,7 @@ public class CreateHsr {
   public int total_byte_cnt;
   public int[] data;
   private int crc;
+  private String monitorType;
 
   public CreateHsr()
   {
@@ -44,6 +45,7 @@ public class CreateHsr {
     section_start = 8;
     section_number = 1;
     total_byte_cnt = 0;
+    monitorType = "";
   }
   
   public boolean IsDone()
@@ -65,8 +67,17 @@ public class CreateHsr {
       }
       return rval;
   }
-
-
+  
+  public int GetNumberOfBytes()
+  {
+      return total_byte_cnt;
+  }
+  
+  public String GetMonitorType()
+  {
+      return monitorType;
+  }
+  
   public boolean AddData(int b) throws Exception
   {
     if(b >= 0)
@@ -77,8 +88,17 @@ public class CreateHsr {
       {
         throw new Exception("Bad first section header (byte 1)");
       }
-      if(ix == 2 && data[1] == 81)
-        System.out.println("Found S510");
+      if(ix == 2)
+      {
+        switch(data[1]) {
+            case 10:
+                this.monitorType = "S410";
+                break;
+            case 81:
+                this.monitorType = "S510";
+                break;
+        }
+      }
       if(ix == 3 && data[2] != 1)
       {
         throw new Exception("Bad first section header (byte 3)");
@@ -105,14 +125,14 @@ public class CreateHsr {
         {
           throw new Exception(String.format("Bad section header, section_number: %d\n", section_number));
         }
-        if(section_number == 1) { /* tell user, we started listening */
-          System.out.format("Section %d started at %d\n", section_number, ix);
-        }
+        //if(section_number == 1) { /* tell user, we started listening */
+          //System.out.format("Section %d started at %d\n", section_number, ix);
+        //}
       }
       /* looking for end of section */
       if(ix >= section_start + 3 && ix == section_start + data[section_start + 2] + 3 + 2)
       {
-        System.out.format("Section %d ended at %d\n", section_number, ix);
+        //System.out.format("Section %d ended at %d\n", section_number, ix);
         if(crc > 0) 
         {
           throw new Exception("Section CRC error");

@@ -1,0 +1,7 @@
+Extracting data from your Polar heart rate monitor using Soniclink.  
+
+Make sure you are in a quiet environment to prevent glitches in the audio signal. 
+Enable the microphone signal in your Volume control program. 
+Press the Start button in SonicRead Hold your watch near the microphone. 
+Select "Connect" in the menu of your Polar. 
+If SonicRead doesn't recognize the signal, check the microphone volume.
