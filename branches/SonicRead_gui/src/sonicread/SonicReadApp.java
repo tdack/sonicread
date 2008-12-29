@@ -1,5 +1,21 @@
 /*
- * SonicReadApp.java
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ * This code is based on the work of Tomás Oliveira e Silva
+ * http://www.ieeta.pt/~tos/software/polar_s410.html
+ * 
+ * Remco den Breeje, <stacium@gmail.com>
  */
 
 package sonicread;
@@ -22,8 +38,6 @@ public class SonicReadApp extends SingleFrameApplication {
     @Override protected void startup() {
         srv = new SonicReadView(this);
         show(srv);
-        
-        //show(new SonicReadView(this));
     }
 
     /**
@@ -46,7 +60,6 @@ public class SonicReadApp extends SingleFrameApplication {
      * Main method launching the application.
      */
     public static void main(String[] args) {
-        System.out.format("main\n");
         launch(SonicReadApp.class, args);
     }
     
@@ -57,26 +70,14 @@ public class SonicReadApp extends SingleFrameApplication {
     //static class SonicListenTask extends Task<String, Void> {
     static class SonicListenTask extends Task<String, Void> {
 
-        //private final File file;
-
         /**
          * Construct a LoadTextFileTask.
          *
          * @param file the file to load from.
          */
-        SonicListenTask(Application application) { //, File file) {
+        SonicListenTask(Application application) {
             super(application);
-            //this.file = file;
         }
-
-        /**
-         * Return the file being loaded.
-         *
-         * @return the value of the read-only file property.
-         */
-        //public final File getFile() {
-            //return file;
-        //}
 
         /**
          * Load the file into a String and return it.  The
@@ -95,7 +96,6 @@ public class SonicReadApp extends SingleFrameApplication {
             SonicLink sonic = new SonicLink();
             CaptureAudio audio = new CaptureAudio();
             
-            //setMessage("Trying to capture audio data");
             audio.Start();
             
             setMessage("Waiting for start byte");
@@ -140,8 +140,6 @@ public class SonicReadApp extends SingleFrameApplication {
                 if(hsr.IsDone())
                 {
                       System.out.format("\nDone.\n");
-                      //hsr.WriteHsr();
-                      //System.out.format("Written data to exercise.hsr\n");
                       break;
                 }
                 
@@ -159,9 +157,7 @@ public class SonicReadApp extends SingleFrameApplication {
             if (!isCancelled()) {
                 return "string";
             } else {
-                return "ok";
-                //return null;
-                //throw new Exception("Cancelled");
+                return null;
             }
         }
     }

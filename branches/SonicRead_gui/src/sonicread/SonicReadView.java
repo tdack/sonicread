@@ -1,5 +1,21 @@
 /*
- * SonicReadView.java
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ * This code is based on the work of Tomás Oliveira e Silva
+ * http://www.ieeta.pt/~tos/software/polar_s410.html
+ * 
+ * Remco den Breeje, <stacium@gmail.com>
  */
 
 package sonicread;
@@ -68,6 +84,8 @@ public class SonicReadView extends FrameView {
                 } else if ("done".equals(propertyName)) {
                     busyIconTimer.stop();
                     statusAnimationLabel.setIcon(idleIcon);
+                    startListenButton.setEnabled(true);
+                    stopListenButton.setEnabled(false);
                     progressBar.setIndeterminate(false);
                     progressBar.setValue(0);
                 } else if ("message".equals(propertyName)) {
@@ -83,6 +101,9 @@ public class SonicReadView extends FrameView {
                 }
             }
         });
+        
+        // disable stop icon
+        stopListenButton.setEnabled(false);
     }
 
     @Action
@@ -117,29 +138,12 @@ public class SonicReadView extends FrameView {
         }
 
         @Override protected void succeeded(String rval) {
-            //setFile(getFile());
-            //textArea.setText(fileContents);
-            //setModified(false);
             statusMessageLabel.setText("Done");
-            startListenButton.setEnabled(true);
-            stopListenButton.setEnabled(false);
         }
 
         @Override protected void failed(Throwable e) {
-            //logger.log(Level.WARNING, "couldn't load " + getFile(), e);
-            //String msg = getResourceMap().getString("loadFailedMessage", getFile());
-            //String title = getResourceMap().getString("loadFailedTitle");
-            //int type = JOptionPane.ERROR_MESSAGE;
-            //JOptionPane.showMessageDialog(getFrame(), msg, title, type);
-            startListenButton.setEnabled(true);
-            stopListenButton.setEnabled(false);
-            //String title = "Error!";
             statusMessageLabel.setIcon(stopIcon);
             statusMessageLabel.setText(e.getMessage());
-            //statusMessageLabel.setText("Task failed");
-            //int type = JOptionPane.ERROR_MESSAGE;
-            //JOptionPane.showMessageDialog(getFrame(), msg, title, type);
-            //statusMessageLabel.setText(arg0);
         }
         
     }
@@ -147,8 +151,6 @@ public class SonicReadView extends FrameView {
     public void setDbLevel(int val)
     {
         DbLevelBar.setValue(val);
-        //jDbLevel.setForeground(new Color(0,0,255));
-        //jDbLevel.setBackground(new Color(255,0,0));
     }
 
 
@@ -180,11 +182,6 @@ public class SonicReadView extends FrameView {
         statusAnimationLabel = new javax.swing.JLabel();
 
         mainPanel.setName("mainPanel"); // NOI18N
-        mainPanel.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent evt) {
-                mainPanelKeyPressed(evt);
-            }
-        });
 
         jToolBar1.setFloatable(false);
         jToolBar1.setRollover(true);
@@ -196,11 +193,6 @@ public class SonicReadView extends FrameView {
         startListenButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         startListenButton.setName("startListenButton"); // NOI18N
         startListenButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        startListenButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                startListenButtonActionPerformed(evt);
-            }
-        });
         jToolBar1.add(startListenButton);
 
         stopListenButton.setAction(actionMap.get("stopListen")); // NOI18N
@@ -311,14 +303,6 @@ public class SonicReadView extends FrameView {
         setMenuBar(menuBar);
         setStatusBar(statusPanel);
     }// </editor-fold>//GEN-END:initComponents
-
-private void mainPanelKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_mainPanelKeyPressed
-
-}//GEN-LAST:event_mainPanelKeyPressed
-
-private void startListenButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startListenButtonActionPerformed
-      //CaptureAudio audio = new CaptureAudio();
-}//GEN-LAST:event_startListenButtonActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JProgressBar DbLevelBar;
