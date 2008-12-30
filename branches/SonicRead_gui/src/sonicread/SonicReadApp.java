@@ -93,7 +93,7 @@ public class SonicReadApp extends SingleFrameApplication {
             int sampleCount = 0;
             CreateHsr hsr = new CreateHsr();
             SonicLink sonic = new SonicLink();
-            CaptureAudio audio = new CaptureAudio(2000);
+            CaptureAudio audio = new CaptureAudio(1000);
             
             audio.Start();
             
@@ -145,9 +145,11 @@ public class SonicReadApp extends SingleFrameApplication {
                 }
                 
                 /* show information */
-                if((sampleCount++ % 2000) == 0)
+                if((sampleCount++ % 1000) == 0)
                 {
-                    srv.setDbLevel(100 + audio.GetLevel());
+                    /* db meter from -55 dB to -5 dB */
+                    srv.setDbLevel(110 + 2*Math.max(-55, Math.min(-5, audio.GetLevel())));
+                    srv.setClipped(audio.SignalClipped());
                 }
             }
 

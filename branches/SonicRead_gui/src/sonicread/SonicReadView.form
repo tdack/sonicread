@@ -22,7 +22,9 @@
                       <Component id="progressBar" alignment="0" max="32767" attributes="1"/>
                       <Component id="DbLevelBar" alignment="0" min="-2" pref="268" max="-2" attributes="1"/>
                   </Group>
-                  <EmptySpace pref="144" max="32767" attributes="0"/>
+                  <EmptySpace min="-2" pref="2" max="-2" attributes="0"/>
+                  <Component id="clippedLabel" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace pref="142" max="32767" attributes="0"/>
               </Group>
           </Group>
         </DimensionLayout>
@@ -31,9 +33,10 @@
               <Group type="102" alignment="0" attributes="0">
                   <Component id="jToolBar1" min="-2" max="-2" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
-                  <Group type="103" groupAlignment="0" attributes="0">
+                  <Group type="103" groupAlignment="1" attributes="0">
                       <Component id="jLabel1" alignment="1" min="-2" max="-2" attributes="1"/>
                       <Component id="DbLevelBar" alignment="1" min="-2" max="-2" attributes="1"/>
+                      <Component id="clippedLabel" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <Group type="103" groupAlignment="0" attributes="0">
                       <Group type="102" alignment="0" attributes="0">
@@ -104,6 +107,12 @@
           <Properties>
             <Property name="text" type="java.lang.String" resourceKey="jLabel2.text"/>
             <Property name="name" type="java.lang.String" value="jLabel2" noResource="true"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JLabel" name="clippedLabel">
+          <Properties>
+            <Property name="text" type="java.lang.String" resourceKey="clippedLabel.text"/>
+            <Property name="name" type="java.lang.String" value="clippedLabel" noResource="true"/>
           </Properties>
         </Component>
       </SubComponents>

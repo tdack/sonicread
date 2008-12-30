@@ -31,6 +31,10 @@ public class CaptureAudio {
   private byte[] buffer;
   private int bufferWriteIx;
   private int bufferReadIx;
+  private int clippingSamples;
+  
+  /* Defines */
+  private static final int AUDIO_MAX = 32767;
 
   /** 
    * Constructor
@@ -46,7 +50,7 @@ public class CaptureAudio {
       DataLine.Info dataLineInfo = new DataLine.Info(TargetDataLine.class, audioFormat);
       targetDataLine = (TargetDataLine)AudioSystem.getLine(dataLineInfo);
       targetDataLine.open(audioFormat);
-
+              
     }catch (Exception e) {
       e.printStackTrace();
       System.exit(0);
@@ -67,6 +71,7 @@ public class CaptureAudio {
   }
 
   public void Start() {
+    clippingSamples = 0;
     targetDataLine.start();
   }
   
@@ -92,6 +97,14 @@ public class CaptureAudio {
   }
   
   /**
+   * Check if the signal did clip
+   * @return true if the signal clipped
+   */
+  public boolean SignalClipped() {
+      return(clippingSamples >= 3);
+  }
+  
+  /**
    * Get a value from the audio input buffer
    * @return audio input sample
    */
@@ -103,9 +116,18 @@ public class CaptureAudio {
       val += (int)buffer[bufferReadIx];
       bufferReadIx += 2;
       
-      /* add audio sample to frame buffer */
-      frames[frameWriteIx++] = bufferReadIx;
+      /* add audio sample to frame buffer, check for clipping */
+      frames[frameWriteIx++] = val;
       frameWriteIx %= frames.length;
+      if(!SignalClipped()) // only check if signed didn't clip till now
+      {
+          if(val >= AUDIO_MAX || val <= -AUDIO_MAX) {
+            clippingSamples++;
+          }
+          else {
+            clippingSamples = 0;
+          }
+      }
     }
     return(val);
   }
@@ -115,7 +137,7 @@ public class CaptureAudio {
       val = Math.abs(val);
       if(val < 1)
           return -100;
-      val /= 32767;
+      val /= AUDIO_MAX;
       val = 20 * Math.log10(val);
       val = Math.round(val);
       return (int)val;
