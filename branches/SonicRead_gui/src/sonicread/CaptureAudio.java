@@ -123,7 +123,7 @@ public class CaptureAudio {
   
   /**
    * Get the audio input level value in decibells
-   * @return audio input level in dB (returns a value from -90 to 0)
+   * @return audio input level in dB (returns a value from -100 to 0)
    */
   public int GetLevel() {
     double rms = 0;
@@ -132,7 +132,6 @@ public class CaptureAudio {
         rms += frames[ii]*frames[ii];
     }
     rms = Math.sqrt(rms / frames.length);
-    //srv.setDbLevel(60 + (int)(20*Math.log10( Math.max(1, Math.abs((double)tmp)) / (double)32767) + 0.5));
     return ToDB(rms);
   }
 }
