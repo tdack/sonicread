@@ -67,7 +67,6 @@ public class SonicReadApp extends SingleFrameApplication {
    /**
      * A Task that loads the contents of a file into a String.
      */
-    //static class SonicListenTask extends Task<String, Void> {
     static class SonicListenTask extends Task<String, Void> {
 
         /**
@@ -91,21 +90,18 @@ public class SonicReadApp extends SingleFrameApplication {
         @Override
         protected String doInBackground() throws Exception {
             int val = -1;
-            short tmp;
+            int sampleCount = 0;
             CreateHsr hsr = new CreateHsr();
             SonicLink sonic = new SonicLink();
-            CaptureAudio audio = new CaptureAudio();
+            CaptureAudio audio = new CaptureAudio(2000);
             
             audio.Start();
             
             setMessage("Waiting for start byte");
             while(audio.ReadSample())
-            {
-                tmp = audio.GetSample();
-                srv.setDbLevel(60 + (int)(20*Math.log10( Math.max(1, Math.abs((double)tmp)) / (double)32767) + 0.5));
-                
+            {                
                 try {
-                    val = sonic.decode(tmp);
+                    val = sonic.decode(audio.GetSample());
                 }
                 catch (Exception e) {
                     sonic.restart();
@@ -146,6 +142,12 @@ public class SonicReadApp extends SingleFrameApplication {
                 if(isCancelled())
                 {
                     break;
+                }
+                
+                /* show information */
+                if((sampleCount++ % 2000) == 0)
+                {
+                    srv.setDbLevel(100 + audio.GetLevel());
                 }
             }
 

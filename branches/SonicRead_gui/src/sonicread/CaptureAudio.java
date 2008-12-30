@@ -20,19 +20,28 @@ package sonicread;
 import javax.sound.sampled.*;
 
 /**
+ * Helper class that enables SonicRead to read data from the audio API 
  * @author Remco den Breeje
  */
 public class CaptureAudio {
-      private AudioFormat audioFormat;
+  private AudioFormat audioFormat;
   private TargetDataLine targetDataLine;
-  private byte[] buf;
-  private int bufwix;
-  private int bufrix;
+  private int[] frames;
+  private int frameWriteIx;
+  private byte[] buffer;
+  private int bufferWriteIx;
+  private int bufferReadIx;
 
-  public CaptureAudio(){
+  /** 
+   * Constructor
+   * @param numFrames    How many samples will be taken to calculate the audio 
+   * input level value.
+   */
+  public CaptureAudio(int numFrames){
     try{
-      buf = new byte[10000];
-      bufwix = bufrix = 0;
+      buffer = new byte[8*1024];
+      frames = new int[numFrames];
+      bufferWriteIx = bufferReadIx = frameWriteIx = 0;
       audioFormat = getAudioFormat();
       DataLine.Info dataLineInfo = new DataLine.Info(TargetDataLine.class, audioFormat);
       targetDataLine = (TargetDataLine)AudioSystem.getLine(dataLineInfo);
@@ -45,7 +54,7 @@ public class CaptureAudio {
   }
 
   private AudioFormat getAudioFormat(){
-    float sampleRate = 44100.0F;        //8000,11025,16000,22050,44100
+    float sampleRate = 44100.0f;
     int sampleSizeInBits = 16;
     int channels = 1;
     boolean signed = true;
@@ -69,23 +78,61 @@ public class CaptureAudio {
     targetDataLine.close();
   }
 
+  /**
+   * Try to read audio from input buffer, and store it in a class buffer
+   * @return true if bytes are fetched, false if not.
+   */
   public boolean ReadSample() {
     int tmp;
-    if(bufwix > 0 && (bufrix < bufwix))
+    if(bufferWriteIx > 0 && (bufferReadIx < bufferWriteIx))
       return true;
-    bufwix = targetDataLine.read(buf, 0, buf.length);
-    bufrix = 0;
-    return(bufwix > 0);
+    bufferWriteIx = targetDataLine.read(buffer, 0, buffer.length);
+    bufferReadIx = 0;
+    return(bufferWriteIx > 0);
   }
-
-  public short GetSample() {
-    short val = 0;
-    if(bufrix < bufwix)
+  
+  /**
+   * Get a value from the audio input buffer
+   * @return audio input sample
+   */
+  public int GetSample() {
+    int val = 0;
+    if(bufferReadIx < bufferWriteIx)
     {
-      val = (short)((short)buf[bufrix + 1] << 8);
-      val += (short)buf[bufrix];
-      bufrix += 2;
+      val = (int)((int)buffer[bufferReadIx + 1] << 8);
+      val += (int)buffer[bufferReadIx];
+      bufferReadIx += 2;
+      
+      /* add audio sample to frame buffer */
+      frames[frameWriteIx++] = bufferReadIx;
+      frameWriteIx %= frames.length;
     }
     return(val);
+  }
+  
+  /** Savely convert double variable to an int in deciBells */
+  private int ToDB(double val) {
+      val = Math.abs(val);
+      if(val < 1)
+          return -100;
+      val /= 32767;
+      val = 20 * Math.log10(val);
+      val = Math.round(val);
+      return (int)val;
+  }
+  
+  /**
+   * Get the audio input level value in decibells
+   * @return audio input level in dB (returns a value from -90 to 0)
+   */
+  public int GetLevel() {
+    double rms = 0;
+    for(int ii = 0; ii < frames.length; ii++)
+    {
+        rms += frames[ii]*frames[ii];
+    }
+    rms = Math.sqrt(rms / frames.length);
+    //srv.setDbLevel(60 + (int)(20*Math.log10( Math.max(1, Math.abs((double)tmp)) / (double)32767) + 0.5));
+    return ToDB(rms);
   }
 }
