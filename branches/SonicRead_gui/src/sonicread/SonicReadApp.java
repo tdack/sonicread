@@ -20,6 +20,7 @@
 
 package sonicread;
 
+import java.io.File;
 import org.jdesktop.application.Application;
 import org.jdesktop.application.SingleFrameApplication;
 import org.jdesktop.application.Task;
@@ -65,9 +66,9 @@ public class SonicReadApp extends SingleFrameApplication {
     
     
    /**
-     * A Task that loads the contents of a file into a String.
+     * A Task that tries to fetch SonicLink data
      */
-    static class SonicListenTask extends Task<String, Void> {
+    static class SonicListenTask extends Task<CreateHsr, Void> {
 
         /**
          * Construct a LoadTextFileTask.
@@ -88,7 +89,7 @@ public class SonicReadApp extends SingleFrameApplication {
          * @return the contents of the {code file} as a String or null
          */
         @Override
-        protected String doInBackground() throws Exception {
+        protected CreateHsr doInBackground() throws Exception {
             int val = -1;
             int sampleCount = 0;
             CreateHsr hsr = new CreateHsr();
@@ -106,6 +107,21 @@ public class SonicReadApp extends SingleFrameApplication {
                 catch (Exception e) {
                     sonic.restart();
                     setMessage(e.getMessage());
+                }
+                
+                /* test */
+                if(1==0)
+                {
+                    try {
+                        hsr.AddData(85);hsr.AddData(81);hsr.AddData(1);hsr.AddData(7);hsr.AddData(199);
+                        hsr.AddData(0);hsr.AddData(7);hsr.AddData(203);hsr.AddData(85);
+                    }
+                    catch (Exception e) {
+                        audio.Stop(); audio.Close();
+                        throw new Exception(String.format("Error while checking data: %s", e.getMessage()));
+                    }
+                    break;
+                        
                 }
                 
                 /* Got byte? */
@@ -159,10 +175,42 @@ public class SonicReadApp extends SingleFrameApplication {
             audio.Close();
             
             if (!isCancelled()) {
-                return "string";
+                return hsr;
             } else {
                 return null;
             }
+        }
+    }
+    
+    static class SonicSaveFileTask extends Task<Void, Void> {
+        
+        private final File file;
+        private final CreateHsr hsr;
+
+        /**
+         * Construct a SonicSaveFileTask.
+         *
+         * @param file The file to save to
+         * @param text The Hsr class that contains the data that will be written
+         */
+        SonicSaveFileTask(Application app, File file, CreateHsr hsr) {
+            super(app);
+            this.file = file;
+            this.hsr = hsr;
+        }
+        
+        public File getFile() {
+            return file;
+        }
+        
+        
+        @Override
+        protected Void doInBackground() throws Exception {
+            if(hsr == null)
+                throw new Exception("Hsr not set yet");
+            
+            hsr.WriteHsr(file);
+            return null;
         }
     }
 }

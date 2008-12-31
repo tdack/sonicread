@@ -21,6 +21,7 @@
 package sonicread;
 
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 
 /**
@@ -33,7 +34,7 @@ public class CreateHsr {
   public int iss;       /* Section size index */
   public int section_start;
   public int section_number;
-  public int total_byte_cnt;
+  public int totalByteCnt;
   public int[] data;
   private int crc;
   private String monitorType;
@@ -44,33 +45,33 @@ public class CreateHsr {
     crc = ix = is = iss = 0;
     section_start = 8;
     section_number = 1;
-    total_byte_cnt = 0;
+    totalByteCnt = 0;
     monitorType = "";
   }
   
   public boolean IsDone()
   {
-    return(total_byte_cnt > 0 && (ix == total_byte_cnt));
+    return(totalByteCnt > 0 && (ix == totalByteCnt));
   }
   
   public boolean IsStarted()
   {
-    return(total_byte_cnt > 0);
+    return(totalByteCnt > 0);
   }
   
   public int GetProgress()
   {
       int rval = 0;
-      if(total_byte_cnt > 0)
+      if(totalByteCnt > 0)
       {
-          rval = 100 * ix / total_byte_cnt;
+          rval = 100 * ix / totalByteCnt;
       }
       return rval;
   }
   
   public int GetNumberOfBytes()
   {
-      return total_byte_cnt;
+      return totalByteCnt;
   }
   
   public String GetMonitorType()
@@ -112,7 +113,7 @@ public class CreateHsr {
         }
 
         /* calculate total number of bytes to be received (8=section header) */
-        total_byte_cnt = 8 + 5 * data[3] + data[4] + 256 * data[5] + 1;
+        totalByteCnt = 8 + 5 * data[3] + data[4] + 256 * data[5] + 1;
       }
       if(ix <= 8) /* got all info we need for the first 8 bytes */
         return true;
@@ -142,7 +143,7 @@ public class CreateHsr {
         section_number++;
       }
       /* looking for final byte */
-      if(ix == total_byte_cnt)
+      if(ix == totalByteCnt)
       {
         if(data[ix - 1] != 7)
         {
@@ -157,15 +158,25 @@ public class CreateHsr {
     return true;
   }
   
-  public void WriteHsr() throws Exception
+  public String toString()
+  {
+      StringBuilder sBuilder = new StringBuilder ();
+
+      sBuilder.append (CreateHsr.class.getName () + ":\n");
+      sBuilder.append (" [totalByteCnt=" + this.totalByteCnt + "]\n");
+
+      return sBuilder.toString ();
+  }
+  
+  public void WriteHsr(File file) throws Exception
   {
     int i;
     try {
       // todo, make filename dynamic dynamic
-      DataOutputStream os = new DataOutputStream(new FileOutputStream("exercise.hsr"));
-      os.writeByte((byte)(total_byte_cnt + 2));
-      os.writeByte((byte)((total_byte_cnt + 2) / 255));
-      for(i = 0;i < total_byte_cnt;i++)
+      DataOutputStream os = new DataOutputStream(new FileOutputStream(file));
+      os.writeByte((byte)(totalByteCnt + 2));
+      os.writeByte((byte)((totalByteCnt + 2) / 255));
+      for(i = 0;i < totalByteCnt;i++)
       {
         os.writeByte(data[i]);
       }
@@ -173,103 +184,6 @@ public class CreateHsr {
     }
     catch (Exception e) {
       throw new Exception ("Error writing hsr");
-    }
-  }
-
-  public void WriteSrd() throws Exception
-  {
-    int ii = 0;
-    int sectionIx = 0;
-    int sectionsInData = 0;
-    int srdBytes = 0;
-    int[] srd = new int[1];
-
-    while(ii < total_byte_cnt)
-    {
-      // get first section
-      if(sectionIx == 0)
-      {
-        // get first section
-        if(data[0] == 85)
-        {
-          sectionsInData = data[3];
-
-          // alloc mem
-          srdBytes = data[5] * 0x100 + data[4] + 2;
-          srd = new int[srdBytes];
-
-          // set size
-          srd[0] = (int)(byte)srdBytes;
-          srd[1] = (int)(byte)(srdBytes / 255);
-          srdBytes = 2;
-
-          // ok, first section read, continue
-          sectionIx++;
-          ii += 8;
-          continue;
-        }
-        else
-        {
-          throw new Exception ("The exercise data is not valid, the first section could not be found");
-        }
-      }
-      else
-      {
-        // find new section
-        if(data[ii] == 85)
-        {
-          // check section number
-          if(data[ii + 1] != sectionIx)
-          {
-            throw new Exception ("Wrong section index");
-          }
-
-          // get size of this section
-          int sectionLength = data[ii + 2];
-
-          System.out.format(">>> new section #%d(%d) found at %d with %d bytes\n",
-              sectionIx, sectionsInData, ii, sectionLength);
-
-
-          // set data in sections array (s) 
-          System.arraycopy(data, ii + 3, srd, srdBytes, sectionLength);
-          srdBytes += sectionLength;
-          System.out.format("Got %d bytes\n", srdBytes);
-
-          // ok, section read, continue
-          sectionIx++;
-          ii += data[ii + 2] + 5; // +5 -> section header length
-          continue;
-        }
-      }
-
-      // done. check for no-more-sections byte at the end of the file
-      if((sectionIx - 1) != sectionsInData)
-      {
-        throw new Exception ("Could not find all sections");
-      }
-      if(data[ii] != 7)
-      {
-        throw new Exception ("Could not find no-more-sections byte");
-      }
-      // ok, all set
-      break;
-    }
-
-    System.out.format("Writing %d bytes\n", srdBytes);
-
-    try {
-      // todo, make filename dynamic dynamic
-      DataOutputStream os = new DataOutputStream(new FileOutputStream("exercise.hsr"));
-      for(ii = 0;ii < srdBytes;ii++)
-      {
-        os.writeByte((byte)srd[ii]);
-      }
-      os.close();
-    }
-    catch (Exception e) {
-      System.out.println("Error writing srd");
-      e.printStackTrace();
     }
   }
 

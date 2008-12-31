@@ -28,16 +28,21 @@ import org.jdesktop.application.TaskMonitor;
 import org.jdesktop.application.Task;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import javax.swing.Timer;
 import javax.swing.Icon;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
 
 /**
  * The application's main frame.
  */
 public class SonicReadView extends FrameView {
     
+    private CreateHsr hsr = null;
     private Task listenTask = null;
 
     public SonicReadView(SingleFrameApplication app) {
@@ -105,6 +110,7 @@ public class SonicReadView extends FrameView {
         
         // disable stop icon
         stopListenButton.setEnabled(false);
+        saveAsButton.setEnabled(false);
     }
 
     @Action
@@ -121,6 +127,7 @@ public class SonicReadView extends FrameView {
     public Task startListen() {
         startListenButton.setEnabled(false);
         stopListenButton.setEnabled(true);
+        saveAsButton.setEnabled(false);
         listenTask = new ListenTask();
         return listenTask;
     }
@@ -132,21 +139,59 @@ public class SonicReadView extends FrameView {
         listenTask.cancel(true);
     }
     
+    @Action
+    public Task saveAs() {
+        JFileChooser fc = createFileChooser("saveAsFileChooser");
+        int option = fc.showSaveDialog(getFrame());
+        Task task = null;
+        if (JFileChooser.APPROVE_OPTION == option) {
+            task = new SaveFileTask(fc.getSelectedFile());
+        }
+        /*
+        Task task = null;
+        File f = new File("/home/remco/test.hsr");
+        task = new SaveFileTask(f);
+         */
+        return task;
+    }
+    
+    public void SetHsr(CreateHsr hsr) {
+        this.hsr = hsr;
+    }
     
     private class ListenTask extends SonicReadApp.SonicListenTask {
         ListenTask() {
             super(SonicReadView.this.getApplication());
-        }
-
-        @Override protected void succeeded(String rval) {
+        }      
+      
+        @Override protected void succeeded(CreateHsr rval) {
+            SetHsr(rval);
             statusMessageLabel.setText("Done");
+            saveAsButton.setEnabled(true);
         }
 
         @Override protected void failed(Throwable e) {
             statusMessageLabel.setIcon(stopIcon);
             statusMessageLabel.setText(e.getMessage());
+        }   
+    }
+    
+    
+    private class SaveFileTask extends SonicReadApp.SonicSaveFileTask {
+        SaveFileTask(File file) {
+            super(SonicReadView.this.getApplication(), file, hsr);
         }
         
+        @Override protected void succeeded(Void foobar) {
+            statusMessageLabel.setText(String.format("Done. Saved data to '%s'", 
+                                                    this.getFile().getName()));
+        }
+
+        @Override protected void failed(Throwable e) {
+            e.printStackTrace();
+            statusMessageLabel.setIcon(stopIcon);
+            statusMessageLabel.setText(e.getMessage());
+        }   
     }
     
     public void setDbLevel(int val)
@@ -160,8 +205,14 @@ public class SonicReadView extends FrameView {
             clippedLabel.setText("Signal clipped!");
         } 
     }
-
-
+    
+    private JFileChooser createFileChooser(String name) {
+        JFileChooser fc = new JFileChooser();
+        fc.setDialogTitle(getResourceMap().getString(name + ".dialogTitle"));
+        fc.setFileFilter(new FileNameExtensionFilter("Hsr files", "hsr"));
+        return fc;
+    }
+   
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
@@ -175,6 +226,7 @@ public class SonicReadView extends FrameView {
         jToolBar1 = new javax.swing.JToolBar();
         startListenButton = new javax.swing.JButton();
         stopListenButton = new javax.swing.JButton();
+        saveAsButton = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         DbLevelBar = new javax.swing.JProgressBar();
         progressBar = new javax.swing.JProgressBar();
@@ -210,6 +262,13 @@ public class SonicReadView extends FrameView {
         stopListenButton.setName("stopListenButton"); // NOI18N
         stopListenButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         jToolBar1.add(stopListenButton);
+
+        saveAsButton.setAction(actionMap.get("saveAs")); // NOI18N
+        saveAsButton.setFocusable(false);
+        saveAsButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        saveAsButton.setName("saveAsButton"); // NOI18N
+        saveAsButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        jToolBar1.add(saveAsButton);
 
         org.jdesktop.application.ResourceMap resourceMap = org.jdesktop.application.Application.getInstance(sonicread.SonicReadApp.class).getContext().getResourceMap(SonicReadView.class);
         jLabel1.setText(resourceMap.getString("jLabel1.text")); // NOI18N
@@ -328,6 +387,7 @@ public class SonicReadView extends FrameView {
     private javax.swing.JPanel mainPanel;
     private javax.swing.JMenuBar menuBar;
     private javax.swing.JProgressBar progressBar;
+    private javax.swing.JButton saveAsButton;
     private javax.swing.JButton startListenButton;
     private javax.swing.JLabel statusAnimationLabel;
     private javax.swing.JLabel statusMessageLabel;
