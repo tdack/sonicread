@@ -1,0 +1,42 @@
+			measurecnt	samplerate	smode
+		samplecnt	laps		h_interval	h_smode
+raw_int_nobike	74	10	1	97	30	0x00
+raw_endur_mtb	98	5	5	98	60	0x22
+
+If the total number of samples is more then 60, the hrdata (and speeddata) is
+spread over more sections in the raw data.
+
+The interval variable in the hrm file is the number of seconds between 2 
+samples. Can be 5, 15, 30, 60, 120, 240, 300 and 480 seconds for the S510 (?)
+raw to hrm conversion the samplerate value is used: 
+95=5, 96=15, 97=30, 98=60, etc (I guess)
+
+If the total number of measurements does not equals the total number of laps, 
+the exercise contains intervals.
+
+trip->max_speed
+logged in section 2, position 27 and 28. Devide pos 27 by 2 and add pos 28 
+multiplied by 128
+
+	20070401  20070415  20070419
+dist	321	  566	    511
+asc
+tottime 
+avg_alt
+max_alt 
+avg spd 2568	  2304	    2968
+max spd 4992	  4328	    10896
+odo	2406	  2458	    2509
+
+dst/256	1	  2	    1
+dst%256 65	  54(!)	    255
+
+avg/256	10	  9	    11
+
+avg/128	27	  18	    23
+avg%128 112	  0	    24
+
+avg	65	  32	    115
+
+max/128	39	  33	    85
+max%128 0	  104	    16A
