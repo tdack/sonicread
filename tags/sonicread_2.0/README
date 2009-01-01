@@ -1,0 +1,22 @@
+SonicRead helps you to to extract data from your Polar heart rate monitor using Soniclink.
+Follow the below stated steps to do so.
+
+* Make sure you are in a quiet environment to prevent glitches in the audio signal. 
+* Enable the microphone signal in the Volume Control program of your Operating System.
+* Press the Start button in SonicRead.
+* Hold your watch near the microphone. 
+* Select "Connect" in the menu of your Polar. 
+* SonicRead should indicate that it started processing SonicLink data, and will update 
+  the progress bar.
+* When done, press the Save button and save the hsr file to the location you wish
+* Use SportsTracker (http://www.saring.de/sportstracker/index.html) to view the data.
+
+If SonicRead doesn't recognize the signal, check the microphone volume:
+  The dB meter bar should be around 20-30% full when picking up background noise.
+  If you make noise, like for example snapping your finger, the progress bar 
+  indicator should rise to 80-90%, and will possible indicate that the audio signal 
+  clipped.
+
+Contact me at stacium@gmail.com if you need support.
+
+Remco den Breeje
