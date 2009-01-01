@@ -17,8 +17,6 @@
 
 import java.io.FileReader;
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Scanner;
 import java.util.Locale;
@@ -126,120 +124,46 @@ class CreateHsr {
     return true;
   }
 
-  public void WriteHsr() throws Exception
+  public void WriteHsr()
   {
-    int i;
-    try { 
-      // todo, make filename dynamic dynamic
-      DataOutputStream os = new DataOutputStream(new FileOutputStream("exercise.hsr"));
-      os.writeByte((byte)(total_byte_cnt + 2));
-      os.writeByte((byte)((total_byte_cnt + 2) / 255));
-      for(i = 0;i < total_byte_cnt;i++)
-      {
-	os.writeByte(data[i]);
-      }
-      os.close();
-    }
-    catch (Exception e) {
-      throw new Exception ("Error writing hsr");
-    }
-  }
+    int i,j,k;
+    if(total_byte_cnt == 0)
+      return;
 
-  public void WriteSrd() throws Exception
-  {
-    int ii = 0;
-    int sectionIx = 0;
-    int sectionsInData = 0;
-    int srdBytes = 0;
-    int[] srd = new int[1];
-
-    while(ii < total_byte_cnt)
+    System.out.format("# Raw data:\n#\n");
+    j = 8;
+    k = 11;
+    System.out.format("# dec hex comment\n");
+    System.out.format("# --- --- --------------------------\n");
+    for(i = 0;i < total_byte_cnt;i++)
     {
-      // get first section
-      if(sectionIx == 0)
+      System.out.format("# %3d  %02X",data[i],data[i]);
+      if(i == 0 || k == 3)
+	System.out.format((i < total_byte_cnt - 1) ? " section start" : " no more sections");
+      if(i == 1)
+	System.out.format(" data format type");
+      if(i == 3)
+	System.out.format(" number of sections");
+      if(i == 4)
+	System.out.format(" number of data bytes (lsb)");
+      if(i == 5)
+	System.out.format(" number of data bytes (msb)");
+      if(k == 2)
+	System.out.format(" section number");
+      if(k == 1)
+	System.out.format(" section size");
+      if(j == 1 || j == 2)
+	System.out.format(" CRC-16 data");
+      System.out.format("\n");
+      if(--j == 0)
+	System.out.format("#\n");
+      if(--k == 0)
       {
-	// get first section
-	if(data[0] == 85)
-	{
-	  sectionsInData = data[3];
-	  
-	  // alloc mem
-	  srdBytes = data[5] * 0x100 + data[4] + 2;
-	  srd = new int[srdBytes];
-      
-	  // set size
-	  srd[0] = (int)(byte)srdBytes;
-	  srd[1] = (int)(byte)(srdBytes / 255);
-	  srdBytes = 2;
-
-	  // ok, first section read, continue
-	  sectionIx++;
-	  ii += 8;
-	  continue;
-	}
-	else
-	{
-	  throw new Exception ("The exercise data is not valid, the first section could not be found");
-	}
+	j = data[i] + 2;
+	k = j + 3;
       }
-      else
-      {
-	// find new section
-	if(data[ii] == 85)
-	{
-	  // check section number
-	  if(data[ii + 1] != sectionIx)
-	  {
-	    throw new Exception ("Wrong section index");   
-	  }
-
-	  // get size of this section
-	  int sectionLength = data[ii + 2];
-	  
-	  System.out.format(">>> new section #%d(%d) found at %d with %d bytes\n", 
-	      sectionIx, sectionsInData, ii, sectionLength);
-
-
-	  // set data in sections array (s) 
-	  System.arraycopy(data, ii + 3, srd, srdBytes, sectionLength);
-	  srdBytes += sectionLength;
-	  System.out.format("Got %d bytes\n", srdBytes);
-
-	  // ok, section read, continue
-	  sectionIx++;
-	  ii += data[ii + 2] + 5; // +5 -> section header length
-	  continue;
-	}
-      }
-
-      // done. check for no-more-sections byte at the end of the file
-      if((sectionIx - 1) != sectionsInData)
-      {
-	throw new Exception ("Could not find all sections");
-      }
-      if(data[ii] != 7)
-      {
-	throw new Exception ("Could not find no-more-sections byte");
-      }
-      // ok, all set
-      break;
     }
-
-    System.out.format("Writing %d bytes\n", srdBytes);
-
-    try { 
-      // todo, make filename dynamic dynamic
-      DataOutputStream os = new DataOutputStream(new FileOutputStream("exercise.srd"));
-      for(ii = 0;ii < srdBytes;ii++)
-      {
-	os.writeByte((byte)srd[ii]);
-      }
-      os.close();
-    }
-    catch (Exception e) {
-      System.out.println("Error writing srd");
-      e.printStackTrace();
-    }
+    System.out.format("\n");
   }
 
   public int crc16(int data)

@@ -56,17 +56,13 @@ class SonicRead {
 
 	if(hsr.IsDone())
 	{
-	  System.out.format("\nDone.\n");
-	  //hsr.WriteSrd();
-	  //System.out.format("Written data to exercise.srd\n");
+	  System.out.format("\nDisplaying raw data:\n\n");
 	  hsr.WriteHsr();
-	  System.out.format("Written data to exercise.hsr\n");
 	  break;
 	}
       }
     }
     catch (Exception e) {
-      e.printStackTrace();
       System.exit(0);
     }
 
