@@ -1,0 +1,2 @@
+* Detect signal-loss failure after first byte.
+* Display proper error message when audio data line could not be opened
