@@ -77,7 +77,7 @@ public class SonicLink {
     if(t > t_active + 10000)
     {
       //update_status("byte start time out",1);
-      throw new Exception("Byte start timed out. Please restart");
+      throw new Exception("Byte start timed out. Restarting..");
     }
 
     /* new byte? */
@@ -98,11 +98,11 @@ public class SonicLink {
       { // end of the byte
 	if((n_byte & 1) == 0)
 	{ // first bit (lsb) must be a one
-	  throw new Exception("Bad byte start. Please restart");
+	  throw new Exception("Bad byte start. Restarting..");
 	}
 	if(n_byte >= 512)
 	{ // last bit (msb) must be a zero
-	  throw new Exception("Bad byte finish. Please restart");
+	  throw new Exception("Bad byte finish. Restarting..");
 	}
 	n_byte >>= 1;
 	t_byte = 0;
@@ -110,7 +110,7 @@ public class SonicLink {
 	  return n_byte;
 	if(n_byte != 0xAA)
 	{ // bad synchronization byte
-          throw new Exception(String.format("Bad synchronization byte (%d in total). Please restart", ++bad_bytes));
+          throw new Exception(String.format("Bad synchronization byte (%d in total). Restarting..", ++bad_bytes));
 	}
 	return -1; // discard synchronization byte
       }
