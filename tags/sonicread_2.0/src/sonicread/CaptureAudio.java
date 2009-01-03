@@ -41,7 +41,7 @@ public class CaptureAudio {
    * @param numFrames    How many samples will be taken to calculate the audio 
    * input level value.
    */
-  public CaptureAudio(int numFrames){
+  public CaptureAudio(int numFrames) throws Exception {
     try{
       buffer = new byte[8*1024];
       frames = new int[numFrames];
@@ -52,8 +52,7 @@ public class CaptureAudio {
       targetDataLine.open(audioFormat);
               
     }catch (Exception e) {
-      e.printStackTrace();
-      System.exit(0);
+      throw new Exception("Error while accessing sound device.");
     }
   }
 

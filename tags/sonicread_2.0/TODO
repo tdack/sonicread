@@ -1,5 +1,4 @@
 * Detect signal-loss failure after first byte has been received
-* Display proper error message when audio data line could not be opened
 * implement logging functionality to help analyse and improve the robustness of the decode algorithm
   (use this class for that:
     FileWriter fw = new FileWriter("logging.txt");
