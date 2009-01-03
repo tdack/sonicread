@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<jnlp spec="1.0+" codebase="http://sites.google.com/site/sonicread/Home" href="sonicread.jnlp">
+    <information>
+        <title>SonicRead</title>
+        <vendor>Remco den Breeje</vendor>
+	<homepage href="http://code.google.com/p/sonicread/"/>
+        <description kind="short">Read acoustic SonicLink data sent by Polar heart rate monitors</description>
+        <icon href="about.png"/>
+        <offline-allowed/>
+    </information>
+    <security>
+        <all-permissions/>
+    </security>
+    <resources>
+        <j2se version="1.6+"/>
+        <jar href="SonicRead.jar" main="true" download="eager"/>
+        <jar href="appframework-1.0.3.jar" download="eager"/>
+        <jar href="beansbinding-1.2.1.jar" download="eager"/>
+        <jar href="swing-worker-1.1.jar" download="eager"/>
+    </resources>
+    <application-desc main-class="sonicread.SonicReadApp"/>
+</jnlp>
