@@ -1,4 +1,4 @@
-function s410_decode(command);
+function decode(command);
 % Tom�s Oliveira e Silva
 %                                                                                                  
 %Here goes the matlab code. It was written in 2001, so I don't recall                              
@@ -24,7 +24,7 @@ function s410_decode(command);
 %should be possible to observe using the matlab code.                                              
 %
 
-global U x0 x1 x2 x3 x4 B
+global U x0 x1 x2 x3 x4 B sonic hsr
 if nargin < 1
   command = -1; % init
 end
@@ -33,56 +33,50 @@ switch command
   case -1,
     clc;
     close all;
-    % read signal
-%     [x0,Fs] = wavread('~/dev/polar/data/hardlopen_20080529.wav');
-%     [x0,Fs] = wavread('~/dev/polar/data/fietsen_20080731.wav');
-%         [x0,Fs] = wavread('/tmp/1.wav');
-%         [x0,Fs] = wavread('~/Desktop/SonicLink.wav');
-       [x0,Fs] = wavread('~/dev/polar/SonicRead/misc/sampledata_20090119.wav');
-       [x0,Fs] = wavread('~/dev/polar/SonicRead/misc/sampledata_polar_f6.wav');
-%     [x0,Fs] = wavread('~/dev/polar/data/test.wav');
-%     [foobar, chan_highest_gain] = max(std(x1));
-%     chan_highest_gain
-%     x1 = x1(:,chan_highest_gain);
-    x0 = x0';
-    % h = fopen('../data/08081701_wav.dat', 'w+'); for i=1:size(x0,2), fprintf(h, '%e\n', x0(2,i)); end; fclose(h);
-    
-%     % remove some samples for 20080731
-%     x0(:,1:4300) = [];
-%     x0(:,12000:end) = [];
-%   
+    addpath scripts;
+    clear java;
+    javaclasspath('/home/remco/dev/polar/SonicRead/build/classes/');
+    import sonicread.*
 
+    Fs = 44100;
+    x0 = read_wav_fs('~/dev/polar/SonicRead/misc/sampledata/polar_s510_20090119.wav', Fs);
+%     x0 = read_wav_fs('~/dev/polar/SonicRead/misc/sampledata/polar_f6.wav', Fs);
+    
     if size(x0,1) > 1,
-        x1 = x0(2,:); % only use the second channel for ubuntu on nb70541!
+        x0 = x0(2,:); % only use the second channel for ubuntu on nb70541!
     else
-        x1 = x0(1,:);
+        x0 = x0(1,:);
     end
     
-%     x1(1,:) = x1(2,:);
-    fprintf(1,'Fs=%.0fHz\n',Fs);
-    fprintf(1,'%d samples\n',length(x1));
-    
-    % convert to required sampling frequency
-    Fsi = 44100;    
-    if Fsi ~= Fs,
-        fprintf(1, 'Converting from %.1fkHz to %.1fkHz\n', Fs*1e-3, Fsi*1e-3);
-        
-        t = [1:size(x1,2)]./Fs;
-        ti = [1:size(x1,2)/(Fs/Fsi)]./Fsi;
-        xi = interp1(t,x1,ti);
-        
-        if 0,
-            plot(t, x1, '.-');
-            hold on;
-            plot(ti, xi, 'r.-');
-            hold off;
+    if 0,
+    sonic = SonicLink; 
+    hsr = CreateHsr;
+    sdata = [];
+    for ii = 1:size(x0,2),
+        try
+            val = sonic.decode(x0(ii));
+        catch e
+            ii
+            keyboard;
+            error('sonic end');
         end
         
-        Fs = Fsi;
-        x1 = xi;
-        x0 = xi;
-        
+        if val >= 0,
+            sdata = [ sdata val ];
+            try
+                hsr.AddData(val);
+            catch e
+                ii
+                keyboard;
+                error('hsr end');
+            end
+        end
     end
+    hsr
+    keyboard;
+    
+    return;
+    end;
     
     % remove low frequency components and rectify signal
     h = remez(40,[0 2000 4000 22050]/22050,[0 0 1 1],[2 1]);
@@ -97,7 +91,7 @@ switch command
     %      0.01562664364293   0.00894445674876   0.00237999784896  -0.00283788804837
     %     -0.00613119820747  -0.00753846964193  -0.00799539667861  -0.01015567605831
     %      0.00379802504960 ]%
-    x1 = abs(filter(h,1,x1));
+    x1 = abs(filter(h,1,x0));
     % dilate and filter signal
     
     x1 = ordfilt2(x1,7,ones(1,7));
@@ -158,7 +152,7 @@ switch command
         end
         if l > 0 & l < 9
           if b > 25 & b < 35
-            error('possibly incorrect bit');
+%             error('possibly incorrect bit');
           end
           b = b > 30;
           c = c + b * 2^(l-1);
@@ -176,7 +170,7 @@ switch command
     % user interface
     figure(1);
     set(1,'Position',[12 288 1000 420]);
-    U(1) = uicontrol('Callback','s410_decode(1)',...
+    U(1) = uicontrol('Callback','decode(1)',...
                      'Style','slider',...
                      'Units','normalized',...
                      'Position',[0.01 0.01 0.98 0.04],...
@@ -185,22 +179,22 @@ switch command
                      'Max',max(1,length(x1)-10000),...
                      'SliderStep',7500/(length(x1)-10000)*[0.999 1.001],...
                      'Value',1);
-    U(2) = uicontrol('Callback','s410_decode(2)',...
+    U(2) = uicontrol('Callback','decode(2)',...
                      'Style','pushbutton',...
                      'Units','normalized',...
                      'Position',[0.01 0.92 0.06 0.05],...
                      'String','hide x1');
-    U(3) = uicontrol('Callback','s410_decode(3)',...
+    U(3) = uicontrol('Callback','decode(3)',...
                      'Style','pushbutton',...
                      'Units','normalized',...
                      'Position',[0.01 0.86 0.06 0.05],...
                      'String','hide x2');
-    U(4) = uicontrol('Callback','s410_decode(4)',...
+    U(4) = uicontrol('Callback','decode(4)',...
                      'Style','pushbutton',...
                      'Units','normalized',...
                      'Position',[0.01 0.80 0.06 0.05],...
                      'String','hide x3');
-    U(5) = uicontrol('Callback','s410_decode(5)',...
+    U(5) = uicontrol('Callback','decode(5)',...
                      'Style','pushbutton',...
                      'Units','normalized',...
                      'Position',[0.01 0.74 0.06 0.05],...
@@ -242,7 +236,7 @@ if command == 0
   offset = floor(get(U(1),'Value'));
 %   offset = 1;
   I = offset:min(offset+10000,length(x1));
-  plot(I-I(1),x0(I)./max(max(x0)), 'g');
+  plot(I-I(1),x0(I)./max(max(x0)), 'g.-');
   hold on;
   if strcmp('hide x1',get(U(2),'String'))
     plot(I-I(1),x1(I),'b');
