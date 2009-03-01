@@ -1,0 +1,8 @@
+* Detect signal-loss failure after first byte has been received
+* implement logging functionality to help analyse and improve the robustness of the decode algorithm
+  (use this class for that:
+    FileWriter fw = new FileWriter("logging.txt");
+    fw.write(String.format("%s\n", Integer.toString(val)));
+  )
+
+
