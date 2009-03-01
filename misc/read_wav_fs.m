@@ -25,5 +25,6 @@ function x0 = read_wav_fs(fn, Fsi)
         
         fprintf(1, 'Done\n');
     end
+    wavwrite(x0,Fs,'/tmp/test.wav');
     
 return;
