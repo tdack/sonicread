@@ -32,15 +32,17 @@ end
 switch command
   case -1,
     clc;
-    close all;
     addpath scripts;
-    clear java;
-    javaclasspath('/home/remco/dev/polar/SonicRead/build/classes/');
-    import sonicread.*
-
+    
     Fs = 44100;
-    x0 = read_wav_fs('~/dev/polar/SonicRead/misc/sampledata/polar_s510_20090119.wav', Fs);
-%     x0 = read_wav_fs('~/dev/polar/SonicRead/misc/sampledata/polar_f6.wav', Fs);
+%     x0 = read_wav_fs('~/dev/polar/SonicRead/misc/sampledata/polar_s510_20090119.wav', Fs);
+    x0 = read_wav_fs('~/dev/polar/SonicRead/misc/sampledata/polar_f6.wav', Fs);
+%     x0 = x0(1,3e3:6.8e3);
+    save polar_f6_start.mat x0
+% x0 = [repmat([ zeros(1,100) .8*sin(10*(0:2*pi/100:2*pi))],1,2) zeros(1,100)];
+% x0 = x0 + .1*rand(size(x0))-.05;
+% x0(end/2:end) = 1.2.*x0(end/2:end);
+
     
     if size(x0,1) > 1,
         x0 = x0(2,:); % only use the second channel for ubuntu on nb70541!
@@ -106,8 +108,9 @@ switch command
     % x0(2,:) = x2;
     % dilate threshold
     x2 = ordfilt2(x2,41,ones(1,41));
+    
     % detect start of transmission (last part is significantly higher than
-    % the fist part)
+    % the fist part) (decision[6] in java)
     h = min(find(x2(1+30:length(x2)) > 25*x2(1:length(x2)-30)));
     if length(h)==0
       error('no transmission detected');
@@ -168,8 +171,9 @@ switch command
       fprintf(1,'  %3d %02X [%6.3f]\n',c,c,g);
     end
     % user interface
-    figure(1);
-    set(1,'Position',[12 288 1000 420]);
+    f = figure(2);
+    set(f,'Position',[12 288 1000 420]);
+    if length(x1) > 18e3,
     U(1) = uicontrol('Callback','decode(1)',...
                      'Style','slider',...
                      'Units','normalized',...
@@ -179,6 +183,7 @@ switch command
                      'Max',max(1,length(x1)-10000),...
                      'SliderStep',7500/(length(x1)-10000)*[0.999 1.001],...
                      'Value',1);
+    end
     U(2) = uicontrol('Callback','decode(2)',...
                      'Style','pushbutton',...
                      'Units','normalized',...
@@ -233,8 +238,11 @@ switch command
 end
 
 if command == 0
-  offset = floor(get(U(1),'Value'));
-%   offset = 1;
+  if length(x1) > 18e3,
+      offset = floor(get(U(1),'Value'));
+  else
+      offset = 1;
+  end
   I = offset:min(offset+10000,length(x1));
   plot(I-I(1),x0(I)./max(max(x0)), 'g.-');
   hold on;

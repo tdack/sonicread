@@ -69,35 +69,53 @@ public class SonicReadApp extends SingleFrameApplication {
      * A Task that tries to fetch SonicLink data
      */
     static class SonicListenTask extends Task<CreateHsr, Void> {
+        
+        private File importWavFile;
 
         /**
          * Construct a LoadTextFileTask.
          *
          * @param file the file to load from.
          */
-        SonicListenTask(Application application) {
+        SonicListenTask(Application application, File file) {
             super(application);
+            this.importWavFile = file;
+        }
+        
+        /**
+         * Are we importing data?
+         * @return True if a wav file is being read. False if not.
+         */
+        private boolean ImportingWav() {
+            return this.importWavFile != null;
         }
 
         /**
-         * Load the file into a String and return it.  The
-         * {@code progress} property is updated as the file is loaded.
+         * Load the SonicLink data into a CreateHsr class and return it.  
+         * {@code progress} property is updated as the data is loaded.
          * <p>
-         * If this task is cancelled before the entire file has been
-         * read, null is returned.
+         * If this task is cancelled before the SonicLink data has been
+         * successfully read, null is returned.
          *
-         * @return the contents of the {code file} as a String or null
+         * @return the SonicLink data as a CreateHsr class or null
          */
         @Override
         protected CreateHsr doInBackground() throws Exception {
             int val = -1;
             int sampleCount = 0;
+            
             CreateHsr hsr = new CreateHsr();
             SonicLink sonic = new SonicLink();
-            CaptureAudio audio = new CaptureAudio(1000);
+            Audio audio;
+            if(ImportingWav()) {
+                audio = new ImportAudio(this.importWavFile);
+            }
+            else {
+                audio = new CaptureAudio();
+                
+            }
             
             audio.Start();
-            
             setMessage("Waiting for start byte");
             while(audio.ReadSample())
             {                
@@ -107,21 +125,6 @@ public class SonicReadApp extends SingleFrameApplication {
                 catch (Exception e) {
                     sonic.restart();
                     setMessage(e.getMessage());
-                }
-                
-                /* test */
-                if(1==0)
-                {
-                    try {
-                        hsr.AddData(85);hsr.AddData(81);hsr.AddData(1);hsr.AddData(7);hsr.AddData(199);
-                        hsr.AddData(0);hsr.AddData(7);hsr.AddData(203);hsr.AddData(85);
-                    }
-                    catch (Exception e) {
-                        audio.Stop(); audio.Close();
-                        throw new Exception(String.format("Error while checking data: %s", e.getMessage()));
-                    }
-                    break;
-                        
                 }
                 
                 /* Got byte? */
