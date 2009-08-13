@@ -19,8 +19,6 @@ package sonicread;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioFormat.Encoding;
 import javax.sound.sampled.AudioInputStream;
@@ -52,7 +50,7 @@ public class ImportAudio extends Audio {
         
         // check format
         AudioFormat format = stream.getFormat();
-        System.out.format(format.toString());
+        System.out.println(format.toString());
         if( format.getSampleRate() != 44100.0 )
             throw new Exception("Unsupported format; Signal must be mono");
         if( format.getChannels() != 1 )

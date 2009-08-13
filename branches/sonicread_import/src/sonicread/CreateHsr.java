@@ -145,8 +145,8 @@ public class CreateHsr {
 
         /* calculate total number of bytes to be received (8=section header) */
         totalByteCnt = 8 + 5 * hsrData[3] + hsrData[4] + 256 * hsrData[5] + 1;
-        if(1==1)
-            throw new Exception(String.format("end %d", totalByteCnt));
+        //if(1==1)
+          //  throw new Exception(String.format("end %d", totalByteCnt));
       }
       if(ix <= 8) /* got all info we need for the first 8 bytes */
         return true;
