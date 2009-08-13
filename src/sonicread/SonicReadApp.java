@@ -91,6 +91,16 @@ public class SonicReadApp extends SingleFrameApplication {
         }
 
         /**
+         * Display message in status bar
+         * @param message to be displayed
+         */
+        private void setStatusMessage(java.lang.String message)
+        {
+            //System.out.format(">>>>>>>>> %s\n", message);
+            setMessage(message);
+        }
+
+        /**
          * Load the SonicLink data into a CreateHsr class and return it.  
          * {@code progress} property is updated as the data is loaded.
          * <p>
@@ -112,19 +122,22 @@ public class SonicReadApp extends SingleFrameApplication {
             }
             else {
                 audio = new CaptureAudio();
-                
             }
             
             audio.Start();
-            setMessage("Waiting for start byte");
+            setStatusMessage("Waiting for start byte");
             while(audio.ReadSample())
             {                
                 try {
                     val = sonic.decode(audio.GetSample());
                 }
                 catch (Exception e) {
+                    // only restart when sampling from audio card
+                    if(ImportingWav()) {
+                        break;
+                    }
                     sonic.restart();
-                    setMessage(e.getMessage());
+                    setStatusMessage(e.getMessage());
                 }
                 
                 /* Got byte? */
@@ -144,11 +157,11 @@ public class SonicReadApp extends SingleFrameApplication {
                 {
                     int pg = hsr.GetProgress();
                     if(pg < 33)
-                        setMessage("Processing data");
+                        setStatusMessage("Processing data");
                     else if(pg < 66)
-                        setMessage(String.format("Found a %s", hsr.GetMonitorType()));
+                        setStatusMessage(String.format("Found a %s", hsr.GetMonitorType()));
                     else
-                        setMessage(String.format("Fetching %d bytes", hsr.GetNumberOfBytes()));
+                        setStatusMessage(String.format("Fetching %d bytes", hsr.GetNumberOfBytes()));
                     setProgress(pg);
                 }
 
@@ -176,8 +189,8 @@ public class SonicReadApp extends SingleFrameApplication {
             srv.setDbLevel(0);
             audio.Stop();
             audio.Close();
-            
-            if (!isCancelled()) {
+
+            if (!isCancelled() && hsr.IsDone()) {
                 return hsr;
             } else {
                 return null;

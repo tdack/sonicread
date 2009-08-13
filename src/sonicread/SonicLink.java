@@ -63,7 +63,7 @@ public class SonicLink {
       tActive = timeIndex;
       t_byte = 0;
       n_bytes = 0;
-      System.out.format("Processing signal at %d\n", timeIndex);
+      System.out.format("Processing signal at %d %.3f\n", timeIndex, (double)timeIndex/44100);
     }
     if(tActive == 0)
           return -1;
@@ -71,6 +71,7 @@ public class SonicLink {
     if(timeIndex > tActive + 10000)
     {
       //update_status("byte start time out",1);
+      System.out.format("Byte start time out at %d\n", timeIndex);
       throw new Exception("Byte start timed out. Restarting..");
     }
 
@@ -92,10 +93,12 @@ public class SonicLink {
       { // end of the byte
 	if((n_byte & 1) == 0)
 	{ // first bit (lsb) must be a one
+      System.out.format("Bad byte start at %d %.3f\n", timeIndex, (double)timeIndex/44100);
 	  throw new Exception("Bad byte start. Restarting..");
 	}
 	if(n_byte >= 512)
 	{ // last bit (msb) must be a zero
+      System.out.format("Bad byte finish at %d\n", timeIndex);
 	  throw new Exception("Bad byte finish. Restarting..");
 	}
 	n_byte >>= 1;

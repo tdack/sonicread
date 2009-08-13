@@ -137,8 +137,8 @@ public class SonicReadView extends FrameView {
         startListenButton.setEnabled(false);
         stopListenButton.setEnabled(false);
         saveAsButton.setEnabled(false);
-        //listenTask = new ListenTask(new File("/home/remco/dev/polar/SonicRead/misc/sampledata/polar_s510_20090119_2.wav"));
-        listenTask = new ListenTask(new File("/tmp/test.wav"));
+        listenTask = new ListenTask(new File("/home/remco/dev/polar/SonicRead/misc/sampledata/polar_s510_2009081101.wav"));
+        //listenTask = new ListenTask(new File("/tmp/test.wav"));
         return listenTask;
     }
     
@@ -170,13 +170,22 @@ public class SonicReadView extends FrameView {
         }      
       
         @Override protected void succeeded(CreateHsr rval) {
-            SetHsr(rval);
-            statusMessageLabel.setText("Done");
-            saveAsButton.setEnabled(true);
+
+            if(rval != null) {
+                SetHsr(rval);
+                statusMessageLabel.setText("Done");
+                saveAsButton.setEnabled(true);
+            }
+            else { // only import returns succeeded w/o hsr
+                statusMessageLabel.setText("Import failed");
+                saveAsButton.setEnabled(false);
+            }
+            
         }
 
         @Override protected void failed(Throwable e) {
             statusMessageLabel.setIcon(stopIcon);
+            System.out.format("2\n");
             statusMessageLabel.setText(e.getMessage());
         }   
     }
@@ -335,7 +344,7 @@ public class SonicReadView extends FrameView {
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, mainPanelLayout.createSequentialGroup()
                         .addGap(9, 9, 9)
                         .addComponent(jLabel2)))
-                .addContainerGap(31, Short.MAX_VALUE))
+                .addContainerGap(23, Short.MAX_VALUE))
         );
 
         menuBar.setName("menuBar"); // NOI18N

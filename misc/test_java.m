@@ -31,9 +31,10 @@ for ii = 1:size(x0,2)
 	val = sl.decode(x0(ii));
     if(val >= 0)
         hsrs = [ hsrs val ];
-        hsr.AddData(val);
+%         hsr.AddData(val);
     end
 end
+return;
 for val = hsrs,
     hsr.AddData(val);
 end
