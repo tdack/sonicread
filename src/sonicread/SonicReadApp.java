@@ -21,7 +21,9 @@
 package sonicread;
 
 import java.io.File;
+import java.util.logging.Level;
 import org.jdesktop.application.Application;
+import org.jdesktop.application.ApplicationContext;
 import org.jdesktop.application.SingleFrameApplication;
 import org.jdesktop.application.Task;
 
@@ -31,13 +33,24 @@ import org.jdesktop.application.Task;
  */
 public class SonicReadApp extends SingleFrameApplication {
     
-    static private SonicReadView srv;    
+    static private SonicReadView srv;
+    public SROptions options;
+    private static final String FILENAME_OPTIONS = "sr-options.xml";
+
+    // Getter/Setter functions
+    public SROptions getOptions() {
+        return options;
+    }
 
     /**
      * At startup create and show the main frame of the application.
      */
     @Override protected void startup() {
-        srv = new SonicReadView(this);
+        // would be nice to put this in a SRDOcument class..
+        getContext().getLocalStorage().setDirectory(new File(System.getProperty ("user.home") + "/.sonicread"));
+        loadOptions();
+        // Create new SonicReadView instance and show it
+        srv = new SonicReadView(this, options);
         show(srv);
     }
 
@@ -58,10 +71,53 @@ public class SonicReadApp extends SingleFrameApplication {
     }
 
     /**
+     * Shuts down the SonicRead application and persists the state.
+     */
+    @Override
+    protected void shutdown () {
+        storeOptions ();
+        super.shutdown ();
+    }
+
+    /**
      * Main method launching the application.
      */
     public static void main(String[] args) {
         launch(SonicReadApp.class, args);
+    }
+
+    /** {@inheritDoc} */
+    public void loadOptions () {
+        try {
+            options = (SROptions) getContext().getLocalStorage().load(FILENAME_OPTIONS);
+            //options = (SROptions) context.getSAFContext ().getLocalStorage ().load (FILENAME_OPTIONS);
+        }
+        catch (Exception e) {
+            //LOGGER.log(Level.WARNING, "Failed to load application options from '" + FILENAME_OPTIONS + "', using default values ...", e);
+            System.out.format("Failed to load application options from '" + FILENAME_OPTIONS + "', using default values (%s)\n", e.toString());
+            e.printStackTrace();
+        }
+
+        // use default options at first start or on load errors
+        if (options == null) {
+            System.out.format("Default!\n");
+            options = SROptions.createDefaultInstance ();
+        }
+    }
+
+    /** {@inheritDoc} */
+    public void storeOptions () {
+        try  {
+            getContext().getLocalStorage().save(options, FILENAME_OPTIONS);
+            //context.getSAFContext ().getLocalStorage ().save (options, FILENAME_OPTIONS);
+            System.out.print(options.getPreviousImportDirectory());
+        }
+        catch (Exception e) {
+            //LOGGER.log(Level.SEVERE, "Failed to write application options to '" +
+            //    FILENAME_OPTIONS + "' ...", ioe);
+            System.out.format("Failed to write application options to '" + FILENAME_OPTIONS + "' (%s)\n", e.toString());
+            e.printStackTrace();
+        }
     }
     
     

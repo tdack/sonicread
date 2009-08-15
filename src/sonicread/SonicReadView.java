@@ -45,9 +45,12 @@ public class SonicReadView extends FrameView {
     private CreateHsr hsr = null;
     private Task listenTask = null;
 
-    public SonicReadView(SingleFrameApplication app) {
-        super(app);
+    private enum fileDialogType { SAVEHSR, OPENWAV }
+    private SROptions options;
 
+    public SonicReadView(SingleFrameApplication app, SROptions opt) {
+        super(app);
+        options = opt;
         initComponents();
 
         // status bar initialization - message timeout, idle icon and busy animation, etc
@@ -137,8 +140,12 @@ public class SonicReadView extends FrameView {
         startListenButton.setEnabled(false);
         stopListenButton.setEnabled(false);
         saveAsButton.setEnabled(false);
-        listenTask = new ListenTask(new File("/home/remco/dev/polar/SonicRead/misc/sampledata/polar_s510_2009081101.wav"));
-        //listenTask = new ListenTask(new File("/tmp/test.wav"));
+        File file = selectFile(fileDialogType.OPENWAV);
+        if(file != null) {
+            listenTask = new ListenTask(file);
+        } else {
+            listenTask = null;
+        }
         return listenTask;
     }
     
@@ -151,11 +158,10 @@ public class SonicReadView extends FrameView {
     
     @Action
     public Task saveAs() {
-        JFileChooser fc = createFileChooser("saveAsFileChooser");
-        int option = fc.showSaveDialog(getFrame());
         Task task = null;
-        if (JFileChooser.APPROVE_OPTION == option) {
-            task = new SaveFileTask(fc.getSelectedFile());
+        File file = selectFile(fileDialogType.SAVEHSR);
+        if (file != null) {
+            task = new SaveFileTask(file);
         }
         return task;
     }
@@ -180,12 +186,10 @@ public class SonicReadView extends FrameView {
                 statusMessageLabel.setText("Import failed");
                 saveAsButton.setEnabled(false);
             }
-            
         }
 
         @Override protected void failed(Throwable e) {
             statusMessageLabel.setIcon(stopIcon);
-            System.out.format("2\n");
             statusMessageLabel.setText(e.getMessage());
         }   
     }
@@ -219,12 +223,48 @@ public class SonicReadView extends FrameView {
             clippedLabel.setText("Signal clipped!");
         } 
     }
-    
-    private JFileChooser createFileChooser(String name) {
+
+    private File selectFile(fileDialogType type) {
+
         JFileChooser fc = new JFileChooser();
+        String name, fDescription, fExtensions;
+        String initialDir;
+
+        switch (type) {
+            case SAVEHSR:
+                name = "saveAsFileChooser";
+                fDescription = "Hsr files";
+                fExtensions = "hsr";
+                initialDir = options.getPreviousExerciseDirectory();
+                break;
+            default: //OPENWAV
+                name = "loadWavFileChooser";
+                fDescription = "Wav files";
+                fExtensions = "wav";
+                initialDir = options.getPreviousImportDirectory();
+        }
+
+        if(initialDir != null) {
+            fc.setCurrentDirectory(new File(initialDir));
+        }
         fc.setDialogTitle(getResourceMap().getString(name + ".dialogTitle"));
-        fc.setFileFilter(new FileNameExtensionFilter("Hsr files", "hsr"));
-        return fc;
+        fc.setFileFilter(new FileNameExtensionFilter(fDescription, fExtensions));
+
+        int option = fc.showOpenDialog(getFrame());
+        if (option == JFileChooser.APPROVE_OPTION) {
+            // Store folder
+            String previousDirectory = fc.getSelectedFile().getParentFile().getAbsolutePath();
+            switch (type) {
+                case SAVEHSR:
+                    options.setPreviousExerciseDirectory(previousDirectory);
+                    break;
+                default: // LOADWAV
+                    options.setPreviousImportDirectory(previousDirectory);
+            }
+
+            return fc.getSelectedFile();
+        }
+        return null;
     }
    
     /** This method is called from within the constructor to
