@@ -50,7 +50,6 @@ public class ImportAudio extends Audio {
         
         // check format
         AudioFormat format = stream.getFormat();
-        System.out.println(format.toString());
         if( format.getSampleRate() != 44100.0 )
             throw new Exception("Unsupported format; Signal must be mono");
         if( format.getChannels() != 1 )
