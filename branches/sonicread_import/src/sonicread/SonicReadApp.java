@@ -21,7 +21,13 @@
 package sonicread;
 
 import java.io.File;
+import java.text.Format;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Vector;
 import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.MemoryHandler;
 import org.jdesktop.application.Application;
 import org.jdesktop.application.ApplicationContext;
 import org.jdesktop.application.SingleFrameApplication;
@@ -36,10 +42,24 @@ public class SonicReadApp extends SingleFrameApplication {
     static private SonicReadView srv;
     public SROptions options;
     private static final String FILENAME_OPTIONS = "sr-options.xml";
-
+    static Vector<String> events;
+    
     // Getter/Setter functions
     public SROptions getOptions() {
         return options;
+    }
+
+    public static void log(String event) {
+        String s;
+        Date date = new Date();
+        Format formatter;
+        formatter = new SimpleDateFormat("k:mm:ss:");
+        s = formatter.format(date);
+
+        String string = String.format("T%s: %s", s, event);
+        events.add(string);
+        System.out.println(string);
+        SonicReadView.updateEventsBox(events);
     }
 
     /**
@@ -47,11 +67,14 @@ public class SonicReadApp extends SingleFrameApplication {
      */
     @Override protected void startup() {
         // would be nice to put this in a SRDOcument class..
+        events = new Vector<String>();
         getContext().getLocalStorage().setDirectory(new File(System.getProperty ("user.home") + "/.sonicread"));
         loadOptions();
+
         // Create new SonicReadView instance and show it
-        srv = new SonicReadView(this, options);
+        srv = new SonicReadView(this);
         show(srv);
+        log("SonicRead started\n");
     }
 
     /**
@@ -90,17 +113,14 @@ public class SonicReadApp extends SingleFrameApplication {
     public void loadOptions () {
         try {
             options = (SROptions) getContext().getLocalStorage().load(FILENAME_OPTIONS);
-            //options = (SROptions) context.getSAFContext ().getLocalStorage ().load (FILENAME_OPTIONS);
         }
         catch (Exception e) {
-            //LOGGER.log(Level.WARNING, "Failed to load application options from '" + FILENAME_OPTIONS + "', using default values ...", e);
             System.out.format("Failed to load application options from '" + FILENAME_OPTIONS + "', using default values (%s)\n", e.toString());
             e.printStackTrace();
         }
 
         // use default options at first start or on load errors
         if (options == null) {
-            System.out.format("Default!\n");
             options = SROptions.createDefaultInstance ();
         }
     }
@@ -109,12 +129,9 @@ public class SonicReadApp extends SingleFrameApplication {
     public void storeOptions () {
         try  {
             getContext().getLocalStorage().save(options, FILENAME_OPTIONS);
-            //context.getSAFContext ().getLocalStorage ().save (options, FILENAME_OPTIONS);
             System.out.print(options.getPreviousImportDirectory());
         }
         catch (Exception e) {
-            //LOGGER.log(Level.SEVERE, "Failed to write application options to '" +
-            //    FILENAME_OPTIONS + "' ...", ioe);
             System.out.format("Failed to write application options to '" + FILENAME_OPTIONS + "' (%s)\n", e.toString());
             e.printStackTrace();
         }
@@ -129,7 +146,7 @@ public class SonicReadApp extends SingleFrameApplication {
         private File importWavFile;
 
         /**
-         * Construct a LoadTextFileTask.
+         * Constructor
          *
          * @param file the file to load from.
          */
@@ -147,12 +164,12 @@ public class SonicReadApp extends SingleFrameApplication {
         }
 
         /**
-         * Display message in status bar
+         * Store message in events log and display in status bar
          * @param message to be displayed
          */
-        private void setStatusMessage(java.lang.String message)
+        private void setLogStatusMessage(java.lang.String message)
         {
-            //System.out.format(">>>>>>>>> %s\n", message);
+            log(message);
             setMessage(message);
         }
 
@@ -181,19 +198,21 @@ public class SonicReadApp extends SingleFrameApplication {
             }
             
             audio.Start();
-            setStatusMessage("Waiting for start byte");
+            log(String.format("Started %s", ImportingWav() ? "importing wav file": "listening"));
+            setLogStatusMessage("Waiting for start byte");
             while(audio.ReadSample())
             {                
                 try {
                     val = sonic.decode(audio.GetSample());
                 }
                 catch (Exception e) {
+                    log(e.getMessage());
+                    setMessage(e.getMessage());
                     // only restart when sampling from audio card
                     if(ImportingWav()) {
                         break;
                     }
                     sonic.restart();
-                    setStatusMessage(e.getMessage());
                 }
                 
                 /* Got byte? */
@@ -203,31 +222,25 @@ public class SonicReadApp extends SingleFrameApplication {
                         hsr.AddData(val);
                     }
                     catch (Exception e) {
-                        audio.Stop();
-                        audio.Close();
-                        throw new Exception(String.format("Error while checking data: %s", e.getMessage()));
+                        setLogStatusMessage(String.format("Error while checking data: %s", e.getMessage()));
+                        break; // stop
                     }
                 }
-                
+
+                /* Display user information */
                 if(hsr.IsStarted())
                 {
                     int pg = hsr.GetProgress();
                     if(pg < 33)
-                        setStatusMessage("Processing data");
+                        setMessage("Processing data");
                     else if(pg < 66)
-                        setStatusMessage(String.format("Found a %s", hsr.GetMonitorType()));
+                        setMessage(String.format("Found a %s", hsr.GetMonitorType()));
                     else
-                        setStatusMessage(String.format("Fetching %d bytes", hsr.GetNumberOfBytes()));
+                        setMessage(String.format("Fetching %d bytes", hsr.GetNumberOfBytes()));
                     setProgress(pg);
                 }
 
-                if(hsr.IsDone())
-                {
-                      System.out.format("\nDone.\n");
-                      break;
-                }
-                
-                if(isCancelled())
+                if(hsr.IsDone() || isCancelled())
                 {
                     break;
                 }
@@ -245,6 +258,8 @@ public class SonicReadApp extends SingleFrameApplication {
             srv.setDbLevel(0);
             audio.Stop();
             audio.Close();
+            log(String.format("Stopped %s", ImportingWav() ? "importing wav file": "listening"));
+
 
             if (!isCancelled() && hsr.IsDone()) {
                 return hsr;

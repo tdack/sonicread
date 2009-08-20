@@ -145,8 +145,6 @@ public class CreateHsr {
 
         /* calculate total number of bytes to be received (8=section header) */
         totalByteCnt = 8 + 5 * hsrData[3] + hsrData[4] + 256 * hsrData[5] + 1;
-        //if(1==1)
-          //  throw new Exception(String.format("end %d", totalByteCnt));
       }
       if(ix <= 8) /* got all info we need for the first 8 bytes */
         return true;
@@ -160,15 +158,16 @@ public class CreateHsr {
           throw new Exception(String.format("Bad section header, section_number: %d\n", section_number));
         }
         if(section_number == 1) { /* tell user, we started listening */
-          System.out.format("Section %d started at %d\n", section_number, ix);
+          SonicReadApp.log(String.format("Section #%d started after %d bytes", section_number, ix));
         }
       }
-      if(crc == 0) 
-          System.out.format("CRC ok at %d\n", ix);
+      if(crc == 0) {
+          SonicReadApp.log(String.format("Section #%d passed error check successfully", section_number));
+      }
       /* looking for end of section */
       if(ix >= section_start + 3 && ix == section_start + hsrData[section_start + 2] + 3 + 2)
       {
-        System.out.format("Section %d ended at %d\n", section_number, ix);
+        SonicReadApp.log(String.format("Section #%d finished after %d bytes", section_number, ix));
         if(crc > 0) 
         {
           throw new Exception("Section CRC error");

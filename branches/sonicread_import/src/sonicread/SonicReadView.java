@@ -29,11 +29,14 @@ import org.jdesktop.application.Task;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.Vector;
 import javax.swing.Timer;
 import javax.swing.Icon;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.WindowConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 
@@ -47,11 +50,13 @@ public class SonicReadView extends FrameView {
 
     private enum fileDialogType { SAVEHSR, OPENWAV }
     private SROptions options;
+    private SonicReadApp sra;
 
-    public SonicReadView(SingleFrameApplication app, SROptions opt) {
+    public SonicReadView(SingleFrameApplication app) {
         super(app);
-        options = opt;
+        sra = (SonicReadApp) app;
         initComponents();
+        options = sra.getOptions();
 
         // status bar initialization - message timeout, idle icon and busy animation, etc
         ResourceMap resourceMap = getResourceMap();
@@ -125,12 +130,37 @@ public class SonicReadView extends FrameView {
         }
         SonicReadApp.getApplication().show(aboutBox);
     }
+
+    public static void updateEventsBox(Vector events) {
+        if (eventsBox != null) {
+            ((SonicReadEventBox)eventsBox).setEvents(events);
+        }
+    }
+
+    @Action
+    public void showEventsBox() {
+        if (eventsBox == null) {
+            JFrame mainFrame = SonicReadApp.getApplication().getMainFrame();
+            eventsBox = new SonicReadEventBox(mainFrame, false);
+            eventsBox.setLocationRelativeTo(mainFrame);
+        }
+        if(EventBoxButton.isSelected() == false) {
+            //eventsBox.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+            SonicReadApp.getApplication().show(eventsBox);
+            EventBoxButton.setSelected(true);
+        } else {
+            eventsBox.setVisible(false);
+            EventBoxButton.setSelected(false);
+        }
+        updateEventsBox(SonicReadApp.events);
+    }
     
     @Action
     public Task startListen() {
         startListenButton.setEnabled(false);
         stopListenButton.setEnabled(true);
         saveAsButton.setEnabled(false);
+        importButton.setEnabled(false);
         listenTask = new ListenTask(null);
         return listenTask;
     }
@@ -153,6 +183,7 @@ public class SonicReadView extends FrameView {
     public void stopListen() {
         startListenButton.setEnabled(true);
         stopListenButton.setEnabled(false);
+        importButton.setEnabled(true);
         listenTask.cancel(true);
     }
     
@@ -173,17 +204,22 @@ public class SonicReadView extends FrameView {
     private class ListenTask extends SonicReadApp.SonicListenTask {
         ListenTask(File file) {
             super(SonicReadView.this.getApplication(), file);
-        }      
+        }
+
+        public void setLogStatusMessage(java.lang.String message) {
+            SonicReadApp.log(message);
+            statusMessageLabel.setText(message);
+        }
       
         @Override protected void succeeded(CreateHsr rval) {
 
             if(rval != null) {
                 SetHsr(rval);
-                statusMessageLabel.setText("Done");
+                setLogStatusMessage("Done. All errorchecks passed successfully");
                 saveAsButton.setEnabled(true);
             }
             else { // only import returns succeeded w/o hsr
-                statusMessageLabel.setText("Import failed");
+                setLogStatusMessage("Import failed");
                 saveAsButton.setEnabled(false);
             }
         }
@@ -199,9 +235,14 @@ public class SonicReadView extends FrameView {
         SaveFileTask(File file) {
             super(SonicReadView.this.getApplication(), file, hsr);
         }
+
+        public void setLogStatusMessage(java.lang.String message) {
+            SonicReadApp.log(message);
+            statusMessageLabel.setText(message);
+        }
         
         @Override protected void succeeded(Void foobar) {
-            statusMessageLabel.setText(String.format("Done. Saved data to '%s'", 
+            setLogStatusMessage(String.format("Done. Saved data to '%s'",
                                                     this.getFile().getName()));
         }
 
@@ -282,7 +323,9 @@ public class SonicReadView extends FrameView {
         stopListenButton = new javax.swing.JButton();
         saveAsButton = new javax.swing.JButton();
         jSeparator1 = new javax.swing.JToolBar.Separator();
-        jButton1 = new javax.swing.JButton();
+        importButton = new javax.swing.JButton();
+        jSeparator2 = new javax.swing.JToolBar.Separator();
+        EventBoxButton = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         DbLevelBar = new javax.swing.JProgressBar();
         progressBar = new javax.swing.JProgressBar();
@@ -329,12 +372,22 @@ public class SonicReadView extends FrameView {
         jSeparator1.setName("jSeparator1"); // NOI18N
         jToolBar1.add(jSeparator1);
 
-        jButton1.setAction(actionMap.get("startImport")); // NOI18N
-        jButton1.setFocusable(false);
-        jButton1.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        jButton1.setName("jButton1"); // NOI18N
-        jButton1.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        jToolBar1.add(jButton1);
+        importButton.setAction(actionMap.get("startImport")); // NOI18N
+        importButton.setFocusable(false);
+        importButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        importButton.setName("importButton"); // NOI18N
+        importButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        jToolBar1.add(importButton);
+
+        jSeparator2.setName("jSeparator2"); // NOI18N
+        jToolBar1.add(jSeparator2);
+
+        EventBoxButton.setAction(actionMap.get("showEventsBox")); // NOI18N
+        EventBoxButton.setFocusable(false);
+        EventBoxButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        EventBoxButton.setName("EventBoxButton"); // NOI18N
+        EventBoxButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        jToolBar1.add(EventBoxButton);
 
         org.jdesktop.application.ResourceMap resourceMap = org.jdesktop.application.Application.getInstance(sonicread.SonicReadApp.class).getContext().getResourceMap(SonicReadView.class);
         jLabel1.setText(resourceMap.getString("jLabel1.text")); // NOI18N
@@ -446,11 +499,13 @@ public class SonicReadView extends FrameView {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JProgressBar DbLevelBar;
+    private javax.swing.JButton EventBoxButton;
     private javax.swing.JLabel clippedLabel;
-    private javax.swing.JButton jButton1;
+    private javax.swing.JButton importButton;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JToolBar.Separator jSeparator1;
+    private javax.swing.JToolBar.Separator jSeparator2;
     private javax.swing.JToolBar jToolBar1;
     private javax.swing.JPanel mainPanel;
     private javax.swing.JMenuBar menuBar;
@@ -471,4 +526,5 @@ public class SonicReadView extends FrameView {
     private int busyIconIndex = 0;
 
     private JDialog aboutBox;
+    static private JDialog eventsBox;
 }

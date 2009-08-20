@@ -63,15 +63,13 @@ public class SonicLink {
       tActive = timeIndex;
       t_byte = 0;
       n_bytes = 0;
-      System.out.format("Processing signal at %d %.3f\n", timeIndex, (double)timeIndex/44100);
+      SonicReadApp.log(String.format("Started processing signal after %.3f sec", (double)timeIndex/44100));
     }
     if(tActive == 0)
           return -1;
     /* deactivation test after a long period of inactivity */
     if(timeIndex > tActive + 10000)
     {
-      //update_status("byte start time out",1);
-      System.out.format("Byte start time out at %d\n", timeIndex);
       throw new Exception("Byte start timed out. Restarting..");
     }
 
@@ -93,12 +91,12 @@ public class SonicLink {
       { // end of the byte
 	if((n_byte & 1) == 0)
 	{ // first bit (lsb) must be a one
-      System.out.format("Bad byte start at %d %.3f\n", timeIndex, (double)timeIndex/44100);
+      SonicReadApp.log(String.format("Bad byte start after %.3f sec", (double)timeIndex/44100));
 	  throw new Exception("Bad byte start. Restarting..");
 	}
 	if(n_byte >= 512)
 	{ // last bit (msb) must be a zero
-      System.out.format("Bad byte finish at %d\n", timeIndex);
+      SonicReadApp.log(String.format("Bad byte finish after %.3f sec", (double)timeIndex/44100));
 	  throw new Exception("Bad byte finish. Restarting..");
 	}
 	n_byte >>= 1;
@@ -107,7 +105,8 @@ public class SonicLink {
 	  return n_byte;
 	if(n_byte != 0xAA)
 	{ // bad synchronization byte
-          throw new Exception(String.format("Bad synchronization byte (%d in total). Restarting..", ++bad_bytes));
+        SonicReadApp.log(String.format("Bad sync byte after %.3f sec", (double)timeIndex/44100));
+        throw new Exception(String.format("Bad synchronization byte (%d in total). Restarting..", ++bad_bytes));
 	}
 	return -1; // discard synchronization byte
       }
