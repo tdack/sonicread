@@ -21,7 +21,7 @@ import java.util.LinkedList;
 import java.util.Vector;
 
 /**
- * Inifinte Impulse Response Filter implementation in Java
+ * Infinite Impulse Response Filter implementation in Java
  */
 public class IIR {
 
