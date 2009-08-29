@@ -30,7 +30,6 @@ public class SonicLink {
 
   private int timeIndex, tActive, t_byte, n_byte, n_bytes;
   private int[] c = new int[6];
-  private double[] filter_input_signal = new double[64];
   private double[] dilate_input_signal = new double[8];
   private double[] median_input_signal = new double[8];
   private double[][] b_median_input_signal = new double[8][8];
@@ -229,8 +228,12 @@ public class SonicLink {
     }
     // compute the amplitude
     decision_input_signal[decision_pos] = x;
-    // ewma on amplitude
-    decision_amplitude[decision_pos] = 0.9999 * decision_amplitude[(decision_pos - 1) & 63];
+    // ewma on amplitude (looser filter when not started processing yet)
+    if(tActive == 0) {
+        decision_amplitude[decision_pos] = 0.995 * decision_amplitude[(decision_pos - 1) & 63];
+    } else {
+        decision_amplitude[decision_pos] = 0.9999 * decision_amplitude[(decision_pos - 1) & 63];
+    }
     // increase amplitude if input signal > amplitude
     if(x > decision_amplitude[decision_pos])
       decision_amplitude[decision_pos] = x;
