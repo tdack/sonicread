@@ -21,13 +21,19 @@
 package sonicread;
 
 public class SonicLink {
-  private int t, t_active, t_byte, n_byte, n_bytes;
+  // Band Pass Filter a 8200 Hz - see SonicRead/misc/process.m how to generate the coefficients
+  // 500*fs(44.1kHz) samples through this 2nd order filter took 17 seconds on a C2D T7200 @ 2GHz,
+  //   that is almost 30 times faster than real-time.
+  Double[] numd = { 0.0029208679314434, 0.0, -0.00584173586288679, 0.0, 0.0029208679314434 };
+  Double[] dend = { -1.52086754562807, 2.42051269704014, -1.40454076433464, 0.853090900926852 };
+  IIR bandPassFilter;
+
+  private int timeIndex, tActive, t_byte, n_byte, n_bytes;
   private int[] c = new int[6];
-  private double[] filter_input_signal = new double[64];
   private double[] dilate_input_signal = new double[8];
   private double[] median_input_signal = new double[8];
   private double[][] b_median_input_signal = new double[8][8];
-  private double[] decision_input_signal = new double[64];
+  public double[] decision_input_signal = new double[64];
   private double[] decision_amplitude = new double[64];
   private double[] decision_threshold_levels = { 0.25,0.30,0.35,0.40,0.45 };
   private int filter_pos, dilate_pos, median_pos, b_median_pos, decision_pos;
@@ -39,12 +45,13 @@ public class SonicLink {
 
   public SonicLink()
   {
+    bandPassFilter = new IIR(numd, dend);
     restart();
   }
 
   public void restart()
   {
-    t = t_active = 0;
+    timeIndex = tActive = 0;
     filter_pos = dilate_pos = median_pos = b_median_pos = decision_pos = -1;
     level_value = 0;
     level_c = 0;
@@ -54,9 +61,9 @@ public class SonicLink {
   public int decode(double x) throws Exception
   {
     int i,j,k;
-    //System.out.format(".");
-    t++;
-    x = filter(x);
+    timeIndex++;
+    x = bandPassFilter.filter(x);
+    //x = filter(x);
     x = dilate(x);
     x = median(x);
     make_decision(x);
@@ -64,17 +71,17 @@ public class SonicLink {
     update_level(x);
 
     /* activation test */
-    if((decisions[6] > 0) && (t_active == 0))
+    if((decisions[6] > 0) && (tActive == 0))
     {
-      t_active = t;
+      tActive = timeIndex;
       t_byte = 0;
       n_bytes = 0;
       //System.out.format("Processing signal at %d\n", t);
     }
-    if(t_active == 0)
+    if(tActive == 0)
           return -1;
     /* deactivation test after a long period of inactivity */
-    if(t > t_active + 10000)
+    if(timeIndex > tActive + 10000)
     {
       //update_status("byte start time out",1);
       throw new Exception("Byte start timed out. Restarting..");
@@ -83,7 +90,7 @@ public class SonicLink {
     /* new byte? */
     if(t_byte == 0 && (decisions[5] > 0))
     { 
-      t_active = t_byte = t;
+      tActive = t_byte = timeIndex;
       n_bytes++;
       n_byte = 0;
       for(i = 0;i < 6;i++)
@@ -93,7 +100,7 @@ public class SonicLink {
     /* processing a byte? */
     if(t_byte > 0)
     {
-      j = (t - t_byte) / 88;  // bit number; the duration of a bit is very close t
+      j = (timeIndex - t_byte) / 88;  // bit number; the duration of a bit is very close to 2ms=88.2 samples
       if(j >= 10)
       { // end of the byte
 	if((n_byte & 1) == 0)
@@ -110,12 +117,12 @@ public class SonicLink {
 	  return n_byte;
 	if(n_byte != 0xAA)
 	{ // bad synchronization byte
-          throw new Exception(String.format("Bad synchronization byte (%d in total). Restarting..", ++bad_bytes));
+        throw new Exception(String.format("Bad synchronization byte (%d in total). Restarting..", ++bad_bytes));
 	}
 	return -1; // discard synchronization byte
       }
-      k = t - t_byte - 88 * j;  // sample number inside the bit
-      if(k < 64) // the bit burst has a duration of close to 60 samples (here we u
+      k = timeIndex - t_byte - 88 * j;  // sample number inside the bit
+      if(k < 64) // the bit burst has a duration of close to 60 samples (here we use 64 but latter we use 60...)
 	for(i = 0;i < 6;i++)
 	  c[i] += decisions[i];
       else if(k == 64)
@@ -129,46 +136,10 @@ public class SonicLink {
 	}
 	if(k >= 4) // majority rule
 	  n_byte += 1 << j;
+        //System.out.format("| %d %d\n", k, (k >= 4) ? 1 : 0);
       }
     }
     return -1;
-  }
-
-  /*
-   * Pass input signal through a (linear phase FIR) high-pass filter
-   *
-   * y = filter(remez(40,[0 2000 4000 22050]/22050,[0 0 1 1],[2 1]),1,x);
-   */
-  private double filter(double x)
-  {
-    double[] h = {
-      0.00379802504960,-0.01015567605831,-0.00799539667861,-0.00753846964193,
-      -0.00613119820747,-0.00283788804837, 0.00237999784896, 0.00894445674876,
-      0.01562664364293, 0.02085836025169, 0.02288210087128, 0.02006200096880,
-      0.01129559749322,-0.00374264061795,-0.02440163523552,-0.04905850773028,
-      -0.07526471722031,-0.10006201874319,-0.12045502068751,-0.13386410688608,
-      0.86146086608477,-0.13386410688608,-0.12045502068751,-0.10006201874319,
-      -0.07526471722031,-0.04905850773028,-0.02440163523552,-0.00374264061795,
-      0.01129559749322, 0.02006200096880, 0.02288210087128, 0.02085836025169,
-      0.01562664364293, 0.00894445674876, 0.00237999784896,-0.00283788804837,
-      -0.00613119820747,-0.00753846964193,-0.00799539667861,-0.01015567605831,
-      0.00379802504960
-    }; 
-    double y;
-    int i;
-
-    if(filter_pos == -1)
-    {
-      filter_pos = 0;
-      for(i = 0;i < 64;i++)
-	filter_input_signal[i] = 0.0;
-    }
-    filter_input_signal[filter_pos] = x;
-    y = 0.0;
-    for(i = 0;i <= 40;i++)
-      y += h[i] * filter_input_signal[(filter_pos - i) & 63];
-    filter_pos = (filter_pos + 1) & 63;
-    return y;
   }
 
   /* 
@@ -176,7 +147,7 @@ public class SonicLink {
    *
    * y = delay(3,ordfilt2(abs(x),7,ones(1,7)));
    */
-  private double dilate(double x)
+  public double dilate(double x)
   {
     double y;
     int i;
@@ -201,7 +172,7 @@ public class SonicLink {
    *
    * y = delay(2,ordfilt2(x,3,ones(1,5)));
    */
-  private double median(double x)
+  public double median(double x)
   {
     double t;
     double[] y = new double[5];
@@ -239,7 +210,7 @@ public class SonicLink {
    * amplitude = delay(20,ordfilt2(y,41,ones(1,41)));
    * decisions = [ delay(20,x) >= level*amplitude  amplitude >= 15*delay(30,amplitude) ])
    */
-  private double make_decision(double x)
+  public double make_decision(double x)
   { 
     // decisions[0..4] = above/below threshold for five different threshold levels
     // decisions[5] = best above/below decision based on a majority rule
@@ -247,6 +218,7 @@ public class SonicLink {
     double t;
     int i;
 
+    // set assumed noise level amplitude of 5% (26dB)
     if(decision_pos == -1)
     {
       decision_pos = 0;
@@ -254,12 +226,18 @@ public class SonicLink {
       for(i = 0;i < 64;i++)
       {
 	decision_input_signal[i] = 0.0;
-	decision_amplitude[i] = 0.0;
+	decision_amplitude[i] = 0.05;
       }
     }
     // compute the amplitude
     decision_input_signal[decision_pos] = x;
-    decision_amplitude[decision_pos] = 0.9999 * decision_amplitude[(decision_pos - 1) & 63];
+    // ewma on amplitude (looser filter when not started processing yet)
+    if(tActive == 0) {
+        decision_amplitude[decision_pos] = 0.995 * decision_amplitude[(decision_pos - 1) & 63];
+    } else {
+        decision_amplitude[decision_pos] = 0.9999 * decision_amplitude[(decision_pos - 1) & 63];
+    }
+    // increase amplitude if input signal > amplitude
     if(x > decision_amplitude[decision_pos])
       decision_amplitude[decision_pos] = x;
     // dilate the amplitude
@@ -291,7 +269,7 @@ public class SonicLink {
    *
    * d = delay(2,ordfilt2(d,3,ones(1,5)));
    */
-  private void b_median()
+  public void b_median()
   {
     int i,j;
 
