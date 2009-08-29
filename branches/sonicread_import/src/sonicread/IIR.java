@@ -57,7 +57,7 @@ public class IIR {
 
         public FIR(Double[] coef) {
             state = new LinkedList<Double>();
-            coefficients = new Vector(Arrays.asList(coef));
+            coefficients = new Vector<Double>(Arrays.asList(coef));
         }
 
         public void add(double val) {
